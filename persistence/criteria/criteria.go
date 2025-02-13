@@ -39,6 +39,16 @@ func (c Criteria) HasNextPageToken() bool {
 	return c.PageToken.Direction == pagetoken.NextDirection
 }
 
+// HasInitialSort checks if [Criteria] has an initial sort operator. This ensures the dataset
+// remains with the same ordering while paginating.
+func (c Criteria) HasInitialSort(s SortOperator) bool {
+	if c.PageToken == nil {
+		return false
+	}
+
+	return c.PageToken.InitialSortOperator == s.String()
+}
+
 // -- OPTIONS --
 
 // Option is a routine used to set several [Criteria] optional fields.

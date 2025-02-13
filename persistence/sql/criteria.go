@@ -8,6 +8,7 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
+	"github.com/samber/lo"
 
 	"github.com/hadroncorp/geck/persistence"
 	"github.com/hadroncorp/geck/persistence/criteria"
@@ -27,7 +28,8 @@ func ExecCriteria[T any](ctx context.Context, params ExecCriteriaParams) ([]T, e
 	if params.Criteria.PageToken != nil {
 		// page token replaces some criteria fields
 		params.Criteria.Sorting.Field = params.Criteria.PageToken.Sort.Field
-		params.Criteria.Sorting.Operator = criteria.NewSortOperator(params.Criteria.PageToken.Sort.Operator)
+		params.Criteria.Sorting.Operator = lo.CoalesceOrEmpty(
+			criteria.NewSortOperator(params.Criteria.PageToken.Sort.Operator))
 
 		if params.Criteria.HasNextPageToken() {
 			params.Criteria.Filters = append(params.Criteria.Filters, criteria.Filter{
@@ -73,13 +75,21 @@ func ExecCriteria[T any](ctx context.Context, params ExecCriteriaParams) ([]T, e
 		return nil, err
 	}
 
-	if len(models) != 0 && params.Criteria.HasPreviousPageToken() {
+	if len(models) > 0 && params.Criteria.HasPreviousPageToken() && !params.Criteria.HasInitialSort(criteria.SortDescending) {
 		slices.SortFunc(models, func(a, b T) int {
 			sortValA := structs.GetStructValue(a, params.Criteria.Sorting.Field,
 				structs.WithTag("db"))
 			sortValB := structs.GetStructValue(b, params.Criteria.Sorting.Field,
 				structs.WithTag("db"))
 			return strings.Compare(fmt.Sprintf("%v", sortValA), fmt.Sprintf("%v", sortValB))
+		})
+	} else if len(models) > 0 && params.Criteria.HasNextPageToken() && params.Criteria.HasInitialSort(criteria.SortDescending) {
+		slices.SortFunc(models, func(a, b T) int {
+			sortValA := structs.GetStructValue(a, params.Criteria.Sorting.Field,
+				structs.WithTag("db"))
+			sortValB := structs.GetStructValue(b, params.Criteria.Sorting.Field,
+				structs.WithTag("db"))
+			return strings.Compare(fmt.Sprintf("%v", sortValB), fmt.Sprintf("%v", sortValA))
 		})
 	}
 	return models, nil

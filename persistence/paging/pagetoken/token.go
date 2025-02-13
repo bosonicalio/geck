@@ -26,6 +26,8 @@ type Token struct {
 	EndCursor any
 	// Sorting specification.
 	Sort Sort
+	// Initial specified operator to sort the dataset.
+	InitialSortOperator string
 	// Indicates what page to fetch (previous or next).
 	Direction Direction
 }

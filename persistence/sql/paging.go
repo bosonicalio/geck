@@ -27,6 +27,7 @@ type NewPageTokensParams[T any] struct {
 	ResultSet       []T
 	FieldTranslator *persistence.FieldTranslator
 	Criteria        criteria.Criteria
+	InitialSort     criteria.SortOperator
 }
 
 // NewPageTokens verifies if there are more pages to fetch (executes an extra query). If so,
@@ -64,7 +65,8 @@ func NewPageTokens[T any](ctx context.Context, params NewPageTokensParams[T]) (P
 				Field:    params.CursorName,
 				Operator: criteria.SortDescending.String(),
 			},
-			Direction: pagetoken.PreviousDirection,
+			InitialSortOperator: params.InitialSort.String(),
+			Direction:           pagetoken.PreviousDirection,
 		}
 	}
 	if hasNext {
@@ -75,7 +77,8 @@ func NewPageTokens[T any](ctx context.Context, params NewPageTokensParams[T]) (P
 				Field:    params.CursorName,
 				Operator: criteria.SortAscending.String(),
 			},
-			Direction: pagetoken.NextDirection,
+			InitialSortOperator: params.InitialSort.String(),
+			Direction:           pagetoken.NextDirection,
 		}
 	}
 	return tokens, nil
