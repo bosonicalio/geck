@@ -15,8 +15,8 @@ type AuditableView struct {
 	LastUpdateTime       string `json:"last_update_time"`
 	LastUpdateTimeMillis int64  `json:"last_update_time_millis"`
 	LastUpdateBy         string `json:"last_update_by"`
-	Version              int64  `json:"version"`
-	IsActive             bool   `json:"is_active"`
+	Version              uint64 `json:"version"`
+	IsDeleted            bool   `json:"is_deleted"`
 }
 
 // NewAuditableFromView allocates a new [Auditable] from an [AuditableView].
@@ -24,11 +24,11 @@ func NewAuditableFromView(v AuditableView) Auditable {
 	createTime, _ := time.Parse(time.RFC3339, v.CreateTime)
 	updateTime, _ := time.Parse(time.RFC3339, v.LastUpdateTime)
 	return Auditable{
-		CreateTime:     createTime,
-		CreateBy:       v.CreateBy,
-		LastUpdateTime: updateTime,
-		LastUpdateBy:   v.LastUpdateBy,
-		Version:        v.Version,
-		IsActive:       v.IsActive,
+		createTime:     createTime,
+		createBy:       v.CreateBy,
+		lastUpdateTime: updateTime,
+		lastUpdateBy:   v.LastUpdateBy,
+		version:        v.Version,
+		isDeleted:      v.IsDeleted,
 	}
 }

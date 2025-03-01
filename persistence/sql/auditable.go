@@ -12,30 +12,30 @@ type Auditable struct {
 	CreateBy       string    `db:"create_by"`
 	LastUpdateTime time.Time `db:"last_update_time"`
 	LastUpdateBy   string    `db:"last_update_by"`
-	Version        int64     `db:"version"`
-	IsActive       bool      `db:"is_active"`
+	Version        uint64    `db:"version"`
+	IsDeleted      bool      `db:"is_deleted"`
 }
 
 // NewAuditable allocates a new [Auditable] instance based on `v` ([audit.Auditable]).
 func NewAuditable(v audit.Auditable) Auditable {
 	return Auditable{
-		CreateTime:     v.CreateTime,
-		CreateBy:       v.CreateBy,
-		LastUpdateTime: v.LastUpdateTime,
-		LastUpdateBy:   v.LastUpdateBy,
-		Version:        v.Version,
-		IsActive:       v.IsActive,
+		CreateTime:     v.CreateTime(),
+		CreateBy:       v.CreateBy(),
+		LastUpdateTime: v.LastUpdateTime(),
+		LastUpdateBy:   v.LastUpdateBy(),
+		Version:        v.Version(),
+		IsDeleted:      v.IsDeleted(),
 	}
 }
 
 // ToAudit converts [Auditable] into an [audit.Auditable].
 func (a Auditable) ToAudit() audit.Auditable {
-	return audit.Auditable{
+	return audit.Parse(audit.ParseArgs{
 		CreateTime:     a.CreateTime.UTC(),
 		CreateBy:       a.CreateBy,
 		LastUpdateTime: a.LastUpdateTime.UTC(),
 		LastUpdateBy:   a.LastUpdateBy,
 		Version:        a.Version,
-		IsActive:       a.IsActive,
-	}
+		IsDeleted:      a.IsDeleted,
+	})
 }

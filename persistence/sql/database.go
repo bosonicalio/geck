@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/samber/lo"
+
+	"github.com/hadroncorp/geck/persistence"
 )
 
 // DB represents a SQL database client based on stdlib [sql.DB].
@@ -265,4 +267,87 @@ func (d *DatabaseLogger) PrepareContext(ctx context.Context, query string) (stmt
 		slog.String("took", time.Since(start).String()),
 	)
 	return
+}
+
+// -- Transaction Propagator --
+
+// DatabaseTxPropagator is an interceptor component adhering transaction propagation
+// to all operations of an existing [DB], using transaction contexts.
+type DatabaseTxPropagator struct {
+	next   DB
+	txOpts *sql.TxOptions
+}
+
+type databaseTxPropagatorOptions struct {
+	txOpts *sql.TxOptions
+}
+
+// DatabaseTxPropagatorOption is a routine used to set up [DatabaseTxPropagator] optional configuration.
+type DatabaseTxPropagatorOption func(*databaseTxPropagatorOptions)
+
+// WithTxOptions sets transaction options for a [DatabaseTxPropagator].
+func WithTxOptions(opts *sql.TxOptions) DatabaseTxPropagatorOption {
+	return func(o *databaseTxPropagatorOptions) {
+		o.txOpts = opts
+	}
+}
+
+// compile-time assertion
+var _ DBInterceptor = (*DatabaseTxPropagator)(nil)
+
+// NewDatabaseTxPropagator allocates a new [DatabaseTxPropagator].
+func NewDatabaseTxPropagator(opts ...DatabaseTxPropagatorOption) *DatabaseTxPropagator {
+	options := databaseTxPropagatorOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+	return &DatabaseTxPropagator{}
+}
+
+func (d *DatabaseTxPropagator) SetNext(db DB) {
+	d.next = db
+}
+
+func (d *DatabaseTxPropagator) Begin() (*sql.Tx, error) {
+	return d.next.Begin()
+}
+
+func (d *DatabaseTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	tx, found := persistence.FromTxContext[Transaction](ctx)
+	if found {
+		return tx.Parent, nil
+	}
+	return d.next.BeginTx(ctx, opts)
+}
+
+func (d *DatabaseTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	tx, found := persistence.FromTxContext[Transaction](ctx)
+	if !found {
+		return d.next.QueryContext(ctx, query, args...)
+	}
+	return tx.Parent.QueryContext(ctx, query, args...)
+}
+
+func (d *DatabaseTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) (row *sql.Row) {
+	tx, found := persistence.FromTxContext[Transaction](ctx)
+	if !found {
+		return d.next.QueryRowContext(ctx, query, args...)
+	}
+	return tx.Parent.QueryRowContext(ctx, query, args...)
+}
+
+func (d *DatabaseTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (res sql.Result, err error) {
+	tx, found := persistence.FromTxContext[Transaction](ctx)
+	if !found {
+		return d.next.ExecContext(ctx, query, args...)
+	}
+	return tx.Parent.ExecContext(ctx, query, args...)
+}
+
+func (d *DatabaseTxPropagator) PrepareContext(ctx context.Context, query string) (stmt *sql.Stmt, err error) {
+	tx, found := persistence.FromTxContext[Transaction](ctx)
+	if !found {
+		return d.next.PrepareContext(ctx, query)
+	}
+	return tx.Parent.PrepareContext(ctx, query)
 }

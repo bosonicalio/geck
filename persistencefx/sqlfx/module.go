@@ -42,6 +42,17 @@ var ObservabilityModule = fx.Module("geck/persistence/sql/interceptors/observabi
 	),
 )
 
+// TransactionModule is a `uber/fx` module providing a [gecksql.DatabaseTxPropagator] instance
+// (as [gecksql.DBInterceptor]) so driver-specific submodules can integrate transaction propagation features
+// into their concrete implementations of [gecksql.DB].
+//
+// Requires to be declared along [InterceptorModule].
+var TransactionModule = fx.Module("geck/persistence/sql/interceptors/tx",
+	fx.Provide(
+		AsDBInterceptor(gecksql.NewDatabaseTxPropagator),
+	),
+)
+
 // GoquModule is the `uber/fx` module of the [goqu] package.
 var GoquModule = fx.Module("geck/persistence/sql/goqu",
 	fx.Invoke(
