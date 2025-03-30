@@ -7,7 +7,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/hadroncorp/geck/persistence"
-	"github.com/hadroncorp/geck/security"
+	"github.com/hadroncorp/geck/security/identity"
 )
 
 // --> Auditable <--
@@ -17,7 +17,7 @@ const _defaultPrincipalUsername = "unknown"
 // Auditable is a structure provisioning metadata for persistence operations.
 //
 // Embed this structure into your entities/aggregates to enhance and control write operations.
-// Call [NewAuditable] routine to create an instance with default values.
+// Call [NewWithDefaults] routine to create an instance with default values.
 //
 // Implements [persistence.Storable] interface.
 type Auditable struct {
@@ -32,20 +32,20 @@ type Auditable struct {
 // compile-time assertions
 var _ persistence.Storable = (*Auditable)(nil)
 
-// NewAuditable allocates a new [Auditable] instance using default values.
+// NewWithDefaults allocates a new [Auditable] instance using default values.
 //
 // This routine takes `ctx` argument to retrieve the [security.Principal] instance performing
 // the operation. If no principal is found, an `unknown` value will be placed instead.
 //
 // Use [AuditableOption] routines to customize how the instance is created.
-func NewAuditable(ctx context.Context, opts ...AuditableOption) Auditable {
+func NewWithDefaults(ctx context.Context, opts ...AuditableOption) Auditable {
 	options := auditableOptions{}
 	for _, opt := range opts {
 		opt(&options)
 	}
 
 	now := time.Now().In(lo.CoalesceOrEmpty(options.location, time.UTC))
-	principal, _ := security.GetPrincipal(ctx)
+	principal, _ := identity.GetPrincipal(ctx)
 	var username string
 	if principal != nil {
 		username = principal.ID()
@@ -61,29 +61,29 @@ func NewAuditable(ctx context.Context, opts ...AuditableOption) Auditable {
 	}
 }
 
-// UpdateAuditable increases the version, updates last update fields, both time and by.
+// Update increases the version, updates last update fields, both time and by.
 //
 // This routine takes `ctx` argument to retrieve the [security.Principal] instance performing
 // the operation. If no principal is found, an `unknown` value will be placed instead.
-func UpdateAuditable(ctx context.Context, auditable *Auditable) {
+func Update(ctx context.Context, auditable *Auditable) {
 	auditable.version++
 	auditable.lastUpdateTime = time.Now().UTC()
 	var username string
-	principal, _ := security.GetPrincipal(ctx)
+	principal, _ := identity.GetPrincipal(ctx)
 	if principal != nil {
 		username = principal.ID()
 	}
 	auditable.lastUpdateBy = lo.CoalesceOrEmpty(username, _defaultPrincipalUsername)
 }
 
-// DeleteAuditable Marks `auditable` as deleted. It aslo increases the version, updates last update
+// Delete Marks `auditable` as deleted. It also increases the version, updates last update
 // fields, both time and by.
 //
 // This routine takes `ctx` argument to retrieve the [security.Principal] instance performing
 // the operation. If no principal is found, an `unknown` value will be placed instead.
-func DeleteAuditable(ctx context.Context, auditable *Auditable) {
+func Delete(ctx context.Context, auditable *Auditable) {
 	auditable.isDeleted = true
-	UpdateAuditable(ctx, auditable)
+	Update(ctx, auditable)
 }
 
 func (a Auditable) CreateTime() time.Time {
@@ -115,9 +115,9 @@ func (a Auditable) IsNew() bool {
 	return a.version == 0
 }
 
-// ToView converts the current [Auditable] instance to an [AuditableView].
-func (a Auditable) ToView() AuditableView {
-	return AuditableView{
+// ToView converts the current [Auditable] instance to a [View].
+func (a Auditable) ToView() View {
+	return View{
 		CreateTime:           a.createTime.Format(time.RFC3339),
 		CreateTimeMillis:     a.createTime.UnixMilli(),
 		CreateBy:             a.createBy,
@@ -145,9 +145,10 @@ func WithLocation(loc *time.Location) AuditableOption {
 	}
 }
 
-// -- Parse --
+// -- New --
 
-type ParseArgs struct {
+// NewArgs is a structure used to provision arguments for [New] routine.
+type NewArgs struct {
 	CreateTime     time.Time
 	CreateBy       string
 	LastUpdateTime time.Time
@@ -156,8 +157,8 @@ type ParseArgs struct {
 	IsDeleted      bool
 }
 
-// Parse converts `args` ([ParseArgs]) to an [Auditable].
-func Parse(args ParseArgs) Auditable {
+// New allocates a new [Auditable].
+func New(args NewArgs) Auditable {
 	return Auditable{
 		createTime:     args.CreateTime,
 		createBy:       args.CreateBy,

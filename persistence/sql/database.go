@@ -274,12 +274,14 @@ func (d *DatabaseLogger) PrepareContext(ctx context.Context, query string) (stmt
 // DatabaseTxPropagator is an interceptor component adhering transaction propagation
 // to all operations of an existing [DB], using transaction contexts.
 type DatabaseTxPropagator struct {
-	next   DB
-	txOpts *sql.TxOptions
+	next         DB
+	txOpts       *sql.TxOptions
+	autoCreateTx bool
 }
 
 type databaseTxPropagatorOptions struct {
-	txOpts *sql.TxOptions
+	txOpts     *sql.TxOptions
+	autoCreate bool
 }
 
 // DatabaseTxPropagatorOption is a routine used to set up [DatabaseTxPropagator] optional configuration.
@@ -289,6 +291,13 @@ type DatabaseTxPropagatorOption func(*databaseTxPropagatorOptions)
 func WithTxOptions(opts *sql.TxOptions) DatabaseTxPropagatorOption {
 	return func(o *databaseTxPropagatorOptions) {
 		o.txOpts = opts
+	}
+}
+
+// WithAutoCreateTx enables the automatic creation of a transaction if one is not found in the context.
+func WithAutoCreateTx() DatabaseTxPropagatorOption {
+	return func(o *databaseTxPropagatorOptions) {
+		o.autoCreate = true
 	}
 }
 
@@ -304,6 +313,21 @@ func NewDatabaseTxPropagator(opts ...DatabaseTxPropagatorOption) *DatabaseTxProp
 	return &DatabaseTxPropagator{}
 }
 
+// getTxCtx retrieves a transaction context from the provided context. If the transaction context is not found
+// and the auto-create transaction option is enabled, a new transaction context is created.
+func (d *DatabaseTxPropagator) getTxCtx(ctx context.Context) (context.Context, error) {
+	_, found := persistence.FromTxContext[Transaction](ctx)
+	if found || !d.autoCreateTx {
+		return ctx, nil
+	}
+	tx, err := d.next.BeginTx(ctx, d.txOpts)
+	if err != nil {
+		return ctx, err
+	}
+	ctxTx := persistence.NewTxContext[Transaction](ctx, Transaction{Parent: tx})
+	return ctxTx, nil
+}
+
 func (d *DatabaseTxPropagator) SetNext(db DB) {
 	d.next = db
 }
@@ -313,41 +337,62 @@ func (d *DatabaseTxPropagator) Begin() (*sql.Tx, error) {
 }
 
 func (d *DatabaseTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
-	tx, found := persistence.FromTxContext[Transaction](ctx)
+	ctxTx, err := d.getTxCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tx, found := persistence.FromTxContext[Transaction](ctxTx)
 	if found {
 		return tx.Parent, nil
 	}
-	return d.next.BeginTx(ctx, opts)
+	return d.next.BeginTx(ctxTx, opts)
 }
 
 func (d *DatabaseTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	tx, found := persistence.FromTxContext[Transaction](ctx)
-	if !found {
-		return d.next.QueryContext(ctx, query, args...)
+	ctxTx, err := d.getTxCtx(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return tx.Parent.QueryContext(ctx, query, args...)
+
+	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	if !found {
+		return d.next.QueryContext(ctxTx, query, args...)
+	}
+	return tx.Parent.QueryContext(ctxTx, query, args...)
 }
 
-func (d *DatabaseTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) (row *sql.Row) {
-	tx, found := persistence.FromTxContext[Transaction](ctx)
-	if !found {
-		return d.next.QueryRowContext(ctx, query, args...)
+func (d *DatabaseTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	ctxTx, err := d.getTxCtx(ctx)
+	if err != nil {
+		return nil
 	}
-	return tx.Parent.QueryRowContext(ctx, query, args...)
+	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	if !found {
+		return d.next.QueryRowContext(ctxTx, query, args...)
+	}
+	return tx.Parent.QueryRowContext(ctxTx, query, args...)
 }
 
-func (d *DatabaseTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (res sql.Result, err error) {
-	tx, found := persistence.FromTxContext[Transaction](ctx)
-	if !found {
-		return d.next.ExecContext(ctx, query, args...)
+func (d *DatabaseTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	ctxTx, err := d.getTxCtx(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return tx.Parent.ExecContext(ctx, query, args...)
+	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	if !found {
+		return d.next.ExecContext(ctxTx, query, args...)
+	}
+	return tx.Parent.ExecContext(ctxTx, query, args...)
 }
 
-func (d *DatabaseTxPropagator) PrepareContext(ctx context.Context, query string) (stmt *sql.Stmt, err error) {
-	tx, found := persistence.FromTxContext[Transaction](ctx)
-	if !found {
-		return d.next.PrepareContext(ctx, query)
+func (d *DatabaseTxPropagator) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	ctxTx, err := d.getTxCtx(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return tx.Parent.PrepareContext(ctx, query)
+	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	if !found {
+		return d.next.PrepareContext(ctxTx, query)
+	}
+	return tx.Parent.PrepareContext(ctxTx, query)
 }

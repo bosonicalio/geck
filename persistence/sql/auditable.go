@@ -3,6 +3,7 @@ package sql
 import (
 	"time"
 
+	"github.com/hadroncorp/geck/persistence"
 	"github.com/hadroncorp/geck/persistence/audit"
 )
 
@@ -16,6 +17,8 @@ type Auditable struct {
 	IsDeleted      bool      `db:"is_deleted"`
 }
 
+var _ persistence.Storable = (*Auditable)(nil)
+
 // NewAuditable allocates a new [Auditable] instance based on `v` ([audit.Auditable]).
 func NewAuditable(v audit.Auditable) Auditable {
 	return Auditable{
@@ -28,9 +31,14 @@ func NewAuditable(v audit.Auditable) Auditable {
 	}
 }
 
+// IsNew returns true if the [Auditable] instance is new.
+func (a Auditable) IsNew() bool {
+	return a.Version == 0
+}
+
 // ToAudit converts [Auditable] into an [audit.Auditable].
 func (a Auditable) ToAudit() audit.Auditable {
-	return audit.Parse(audit.ParseArgs{
+	return audit.New(audit.NewArgs{
 		CreateTime:     a.CreateTime.UTC(),
 		CreateBy:       a.CreateBy,
 		LastUpdateTime: a.LastUpdateTime.UTC(),

@@ -2,13 +2,13 @@ package audit
 
 import "time"
 
-// AuditableView is a version of [Auditable] with primitive-only fields.
+// View is a version of [Auditable] with primitive-only fields.
 //
 // Moreover, this structure adds new fields such as CreateTimeMillis to
 // guarantee compatibility with external systems using time in unix epoch format.
 //
 // Finally, this structure is meant to be exposed to external systems (hence the name `view`).
-type AuditableView struct {
+type View struct {
 	CreateTime           string `json:"create_time"`
 	CreateTimeMillis     int64  `json:"create_time_millis"`
 	CreateBy             string `json:"create_by"`
@@ -19,8 +19,8 @@ type AuditableView struct {
 	IsDeleted            bool   `json:"is_deleted"`
 }
 
-// NewAuditableFromView allocates a new [Auditable] from an [AuditableView].
-func NewAuditableFromView(v AuditableView) Auditable {
+// ParseView allocates a new [Auditable] from v ([View]).
+func ParseView(v View) Auditable {
 	createTime, _ := time.Parse(time.RFC3339, v.CreateTime)
 	updateTime, _ := time.Parse(time.RFC3339, v.LastUpdateTime)
 	return Auditable{

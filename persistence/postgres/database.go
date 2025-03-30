@@ -11,10 +11,13 @@ import (
 	gecksql "github.com/hadroncorp/geck/persistence/sql"
 )
 
+// DBConfig is a structure used by factory routines generating sql.DB instances.
 type DBConfig struct {
 	gecksql.DBConfig
+	// MaxConnLifetimeJitter is the maximum amount of time to jitter a connection's lifetime.
 	MaxConnLifetimeJitter time.Duration `env:"PSQL_MAX_CONN_LIFETIME_JITTER"`
-	HealthCheckInterval   time.Duration `env:"PSQL_HEALTHCHECK_INTERVAL" envDefault:"5s"`
+	// HealthCheckInterval is the interval between connection health checks.
+	HealthCheckInterval time.Duration `env:"PSQL_HEALTHCHECK_INTERVAL" envDefault:"5s"`
 }
 
 // NewPooledDB allocates a [sql.DB] instance.
