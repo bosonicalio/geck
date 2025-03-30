@@ -1,4 +1,4 @@
-package pagetoken
+package cryptox
 
 import (
 	"crypto/aes"
@@ -6,9 +6,8 @@ import (
 	"crypto/rand"
 )
 
-var defaultEncryptionKey = "HjwgM,F4?cA3t5Z6"
-
-func encrypt(plaintext []byte, key []byte) ([]byte, error) {
+// Encrypt encrypts the plaintext using the key and returns the ciphertext.
+func Encrypt(plaintext []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -25,7 +24,8 @@ func encrypt(plaintext []byte, key []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func decrypt(ciphertext []byte, key []byte) ([]byte, error) {
+// Decrypt decrypts the ciphertext using the key and returns the plaintext.
+func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
