@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/hadroncorp/geck/errors/syserr"
+	"github.com/hadroncorp/geck/syserr"
 )
 
 // Errors is a sentinel structure containing a slice of [Error].
