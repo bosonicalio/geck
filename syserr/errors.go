@@ -1,10 +1,22 @@
 package syserr
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
+)
+
+var (
+	// ErrResourceNotFound is returned when the resource is not found.
+	ErrResourceNotFound = errors.New("resource not found")
+	// ErrResourceAlreadyExists is returned when the resource already exists.
+	ErrResourceAlreadyExists = errors.New("resource already exists")
+	// ErrInvalidFormat is returned when the format is invalid.
+	ErrInvalidFormat = errors.New("invalid format")
+	// ErrMissingValue is returned when the value is missing.
+	ErrMissingValue = errors.New("missing value")
 )
 
 // NewResourceNotFound allocates a new [Error].
@@ -15,6 +27,7 @@ func NewResourceNotFound[T any]() Error {
 	msg := fmt.Sprintf("resource '%s' not found", typeof.String())
 	return New(ResourceNotFound, msg,
 		WithInternalCode("RESOURCE_NOT_FOUND"),
+		WithStaticError(ErrResourceNotFound),
 	)
 }
 
@@ -26,6 +39,7 @@ func NewResourceAlreadyExists[T any]() Error {
 	msg := fmt.Sprintf("resource '%s' already exists", typeof.String())
 	return New(ResourceExists, msg,
 		WithInternalCode("RESOURCE_ALREADY_EXISTS"),
+		WithStaticError(ErrResourceAlreadyExists),
 	)
 }
 
@@ -37,6 +51,7 @@ func NewInvalidFormat(name, format string) Error {
 	return New(InvalidArgument, msg,
 		WithInternalCode("INVALID_FORMAT"),
 		WithInfo("expected_format", format),
+		WithStaticError(ErrInvalidFormat),
 	)
 }
 
@@ -47,6 +62,7 @@ func NewMissingValue(name string) Error {
 	msg := fmt.Sprintf("'%s' is missing", name)
 	return New(InvalidArgument, msg,
 		WithInternalCode("MISSING_VALUE"),
+		WithStaticError(ErrMissingValue),
 	)
 }
 
@@ -59,6 +75,7 @@ func NewNotOneOf(name string, values ...string) Error {
 	return New(InvalidArgument, msg,
 		WithInternalCode("VALUE_NOT_ONE_OF"),
 		WithInfo("accepted_values", acceptedValues),
+		WithStaticError(ErrInvalidFormat),
 	)
 }
 
@@ -82,6 +99,7 @@ func NewEquals(name string, invalidVals ...string) Error {
 	return New(InvalidArgument, msg,
 		WithInternalCode("VALUE_EQUALS"),
 		WithInfo("invalid_values", valStr),
+		WithStaticError(ErrInvalidFormat),
 	)
 }
 
@@ -93,6 +111,7 @@ func NewInvalidLength(name string, expLen int) Error {
 	return New(InvalidArgument, msg,
 		WithInternalCode("VALUE_INVALID_LENGTH"),
 		WithInfo("expected_length", strconv.Itoa(expLen)),
+		WithStaticError(ErrInvalidFormat),
 	)
 }
 
@@ -104,6 +123,7 @@ func NewAboveLimit(name string, max int) Error {
 	return New(InvalidArgument, msg,
 		WithInternalCode("VALUE_INVALID_SIZE"),
 		WithInfo("max_size", strconv.Itoa(max)),
+		WithStaticError(ErrInvalidFormat),
 	)
 }
 
@@ -115,5 +135,6 @@ func NewBelowLimit(name string, min int) Error {
 	return New(InvalidArgument, msg,
 		WithInternalCode("VALUE_INVALID_SIZE"),
 		WithInfo("min_size", strconv.Itoa(min)),
+		WithStaticError(ErrInvalidFormat),
 	)
 }
