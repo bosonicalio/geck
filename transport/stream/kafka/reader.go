@@ -34,7 +34,11 @@ type ReaderManager interface {
 	// separate goroutine, and the reader manager will handle the error
 	// according to the configured error handler.
 	Register(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption)
+	// Start starts the reader manager. It begins polling records from Kafka and
+	// invoking the registered handlers. The reader manager will run until it is closed ([ReaderManager.Close]).
 	Start() error
+	// Close closes the reader manager. It stops polling records from Kafka and
+	// waits for all in-flight handlers to complete for a graceful shutdown.
 	Close(ctx context.Context) error
 }
 
