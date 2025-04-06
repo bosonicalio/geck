@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 	"time"
 
@@ -27,7 +26,6 @@ type AsyncWriter struct {
 var (
 	// compile-time assertions
 	_ stream.Writer = (*AsyncWriter)(nil)
-	_ io.Closer     = (*AsyncWriter)(nil)
 )
 
 // NewAsyncWriter creates a new instance of [AsyncWriter].
@@ -42,19 +40,12 @@ func NewAsyncWriter(client *kgo.Client, opts ...AsyncWriterOption) AsyncWriter {
 	}
 }
 
-// Close closes the underlying Kafka client.
-func (s AsyncWriter) Close() error {
-	s.client.Close()
-	return nil
-}
-
 func (s AsyncWriter) Write(ctx context.Context, name string, message stream.Message) error {
 	s.client.Produce(ctx, &kgo.Record{
-		Key:       []byte(name),
-		Value:     message.Data,
-		Headers:   marshalHeaders(message.Metadata),
-		Timestamp: time.Time{},
-		Topic:     name,
+		Key:     []byte(message.Key),
+		Value:   message.Data,
+		Headers: marshalHeaders(message.Metadata),
+		Topic:   name,
 	}, s.opts.handler)
 	return nil
 }
@@ -62,11 +53,10 @@ func (s AsyncWriter) Write(ctx context.Context, name string, message stream.Mess
 func (s AsyncWriter) WriteBatch(ctx context.Context, name string, messages []stream.Message) (int, error) {
 	for _, m := range messages {
 		s.client.Produce(ctx, &kgo.Record{
-			Key:       []byte(name),
-			Value:     m.Data,
-			Headers:   marshalHeaders(m.Metadata),
-			Timestamp: time.Time{},
-			Topic:     name,
+			Key:     []byte(m.Key),
+			Value:   m.Data,
+			Headers: marshalHeaders(m.Metadata),
+			Topic:   name,
 		}, s.opts.handler)
 	}
 	return 0, nil
@@ -127,7 +117,6 @@ type SyncWriter struct {
 var (
 	// compile-time assertions
 	_ stream.Writer = (*SyncWriter)(nil)
-	_ io.Closer     = (*SyncWriter)(nil)
 )
 
 // NewSyncWriter creates a new instance of [SyncWriter].
@@ -135,20 +124,13 @@ func NewSyncWriter(client *kgo.Client) SyncWriter {
 	return SyncWriter{client: client}
 }
 
-// Close closes the underlying Kafka client.
-func (s SyncWriter) Close() error {
-	s.client.Close()
-	return nil
-}
-
 func (s SyncWriter) Write(ctx context.Context, name string, message stream.Message) error {
 	return s.client.ProduceSync(ctx, &kgo.Record{
-		Key:       []byte(name),
-		Value:     message.Data,
-		Headers:   marshalHeaders(message.Metadata),
-		Timestamp: time.Time{},
-		Topic:     name,
-		Context:   ctx,
+		Key:     []byte(message.Key),
+		Value:   message.Data,
+		Headers: marshalHeaders(message.Metadata),
+		Topic:   name,
+		Context: ctx,
 	}).FirstErr()
 }
 
@@ -156,12 +138,11 @@ func (s SyncWriter) WriteBatch(ctx context.Context, name string, messages []stre
 	buf := make([]*kgo.Record, 0, len(messages))
 	for _, m := range messages {
 		buf = append(buf, &kgo.Record{
-			Key:       []byte(name),
-			Value:     m.Data,
-			Headers:   marshalHeaders(m.Metadata),
-			Timestamp: time.Time{},
-			Topic:     name,
-			Context:   ctx,
+			Key:     []byte(m.Key),
+			Value:   m.Data,
+			Headers: marshalHeaders(m.Metadata),
+			Topic:   name,
+			Context: ctx,
 		})
 	}
 
@@ -181,18 +162,11 @@ type TransactionalWriter struct {
 var (
 	// compile-time assertions
 	_ stream.Writer = (*TransactionalWriter)(nil)
-	_ io.Closer     = (*TransactionalWriter)(nil)
 )
 
 // NewTransactionalWriter creates a new instance of [TransactionalWriter].
 func NewTransactionalWriter(client *kgo.Client) TransactionalWriter {
 	return TransactionalWriter{client: client}
-}
-
-// Close closes the underlying Kafka client.
-func (s TransactionalWriter) Close() error {
-	s.client.Close()
-	return nil
 }
 
 // writeInTransaction handles a complete transaction with multiple writes.
@@ -225,7 +199,7 @@ func (s TransactionalWriter) writeInTransaction(ctx context.Context, fn func(ctx
 func (s TransactionalWriter) Write(ctx context.Context, name string, message stream.Message) error {
 	return s.writeInTransaction(ctx, func(ctx context.Context) error {
 		return s.client.ProduceSync(ctx, &kgo.Record{
-			Key:       []byte(name),
+			Key:       []byte(message.Key),
 			Value:     message.Data,
 			Headers:   marshalHeaders(message.Metadata),
 			Timestamp: time.Time{},
@@ -241,7 +215,7 @@ func (s TransactionalWriter) WriteBatch(ctx context.Context, name string, messag
 		buf := make([]*kgo.Record, 0, len(messages))
 		for _, m := range messages {
 			buf = append(buf, &kgo.Record{
-				Key:       []byte(name),
+				Key:       []byte(m.Key),
 				Value:     m.Data,
 				Headers:   marshalHeaders(m.Metadata),
 				Timestamp: time.Time{},
