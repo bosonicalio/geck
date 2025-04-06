@@ -4,8 +4,8 @@ package stream
 type Message struct {
 	// Key is the message key.
 	Key string
-	// Metadata contains additional metadata about the message.
-	Metadata map[string]string
+	// Header contains additional metadata about the message.
+	Header Header
 	// Data is the message data.
 	Data []byte
 }

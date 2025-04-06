@@ -44,7 +44,7 @@ func (s AsyncWriter) Write(ctx context.Context, name string, message stream.Mess
 	s.client.Produce(ctx, &kgo.Record{
 		Key:     []byte(message.Key),
 		Value:   message.Data,
-		Headers: marshalHeaders(message.Metadata),
+		Headers: marshalHeaders(message.Header),
 		Topic:   name,
 	}, s.opts.handler)
 	return nil
@@ -55,7 +55,7 @@ func (s AsyncWriter) WriteBatch(ctx context.Context, name string, messages []str
 		s.client.Produce(ctx, &kgo.Record{
 			Key:     []byte(m.Key),
 			Value:   m.Data,
-			Headers: marshalHeaders(m.Metadata),
+			Headers: marshalHeaders(m.Header),
 			Topic:   name,
 		}, s.opts.handler)
 	}
@@ -128,7 +128,7 @@ func (s SyncWriter) Write(ctx context.Context, name string, message stream.Messa
 	return s.client.ProduceSync(ctx, &kgo.Record{
 		Key:     []byte(message.Key),
 		Value:   message.Data,
-		Headers: marshalHeaders(message.Metadata),
+		Headers: marshalHeaders(message.Header),
 		Topic:   name,
 		Context: ctx,
 	}).FirstErr()
@@ -140,7 +140,7 @@ func (s SyncWriter) WriteBatch(ctx context.Context, name string, messages []stre
 		buf = append(buf, &kgo.Record{
 			Key:     []byte(m.Key),
 			Value:   m.Data,
-			Headers: marshalHeaders(m.Metadata),
+			Headers: marshalHeaders(m.Header),
 			Topic:   name,
 			Context: ctx,
 		})
@@ -201,7 +201,7 @@ func (s TransactionalWriter) Write(ctx context.Context, name string, message str
 		return s.client.ProduceSync(ctx, &kgo.Record{
 			Key:       []byte(message.Key),
 			Value:     message.Data,
-			Headers:   marshalHeaders(message.Metadata),
+			Headers:   marshalHeaders(message.Header),
 			Timestamp: time.Time{},
 			Topic:     name,
 			Context:   ctx,
@@ -217,7 +217,7 @@ func (s TransactionalWriter) WriteBatch(ctx context.Context, name string, messag
 			buf = append(buf, &kgo.Record{
 				Key:       []byte(m.Key),
 				Value:     m.Data,
-				Headers:   marshalHeaders(m.Metadata),
+				Headers:   marshalHeaders(m.Header),
 				Timestamp: time.Time{},
 				Topic:     name,
 				Context:   ctx,

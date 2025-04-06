@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/samber/lo"
@@ -16,44 +17,61 @@ import (
 var (
 	// ErrAlreadyRegistered is returned when a handler is already registered for a topic.
 	ErrAlreadyRegistered = errors.New("reader handler already registered")
-	// ErrNoRecords is returned when no records are fetched from Kafka.
-	ErrNoRecords = errors.New("no records fetched")
+	// ErrEOF is returned when no records are fetched from Kafka.
+	ErrEOF = errors.New("no records fetched")
 	// ErrNoHandlerFound is returned when no handler is found for a topic.
 	ErrNoHandlerFound = errors.New("no handler found for topic")
 	// ErrReaderManagerClosed is returned when the reader manager is closed.
 	ErrReaderManagerClosed = errors.New("reader manager is closed")
+	// ErrReaderManagerAlreadyStarted is returned when the reader manager is already started.
+	ErrReaderManagerAlreadyStarted = errors.New("reader manager already started")
 )
 
-// A ReaderManager is a component that manages the registration and lifecycle of
-// Kafka reader handlers. It is responsible for starting the reader, polling
-// records from Kafka, and invoking the registered handlers for each record.
+// -- Reader Manager --
+
+// A ReaderManager is a component that manages the reading of records from Apache Kafka topics.
 type ReaderManager interface {
-	// Register registers a handler for a specific topic. The handler is invoked
-	// for each record fetched from Kafka. The handler function should return an
-	// error if the processing of the record fails. The handler is invoked in a
-	// separate goroutine, and the reader manager will handle the error
-	// according to the configured error handler.
-	Register(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption)
-	// Start starts the reader manager. It begins polling records from Kafka and
-	// invoking the registered handlers. The reader manager will run until it is closed ([ReaderManager.Close]).
+	// Register registers a handler for a specific topic. The handler will be invoked everytime a record is fetched
+	// from the Apache Kafka topic.
+	//
+	// Use [ReaderRegisterOption] to configure additional mechanisms (like consumer groups).
+	Register(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption) error
+	// MustRegister registers a handler for a specific topic. The handler will be invoked everytime a record is fetched
+	// from the Apache Kafka topic.
+	//
+	// Use [ReaderRegisterOption] to configure additional mechanisms (like consumer groups).
+	//
+	// This routine will panic if any error occurs.
+	MustRegister(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption)
+	// Start starts the reader manager. It begins polling records from Kafka and invoking the registered handlers.
+	//
+	// The reader manager will run until it is closed ([ReaderManager.Close]).
 	Start() error
-	// Close closes the reader manager. It stops polling records from Kafka and
-	// waits for all in-flight handlers to complete for a graceful shutdown.
+	// Close closes the reader manager. It stops polling records from Kafka and  waits for all in-flight handlers
+	// to complete for a graceful shutdown.
 	Close(ctx context.Context) error
 }
 
-// -- Channel --
+// --- Channel ---
 
 // ChannelReaderManager is a concrete implementation of [ReaderManager] using Go channels.
 //
-// This component is responsible for managing the registration and lifecycle of
-// Kafka reader handlers. It is responsible for starting the reader, polling
-// records from Kafka, and invoking the registered handlers for each record.
-// It uses a worker pool to process records concurrently and allows for
-// custom error handling and configuration options.
-// It is designed to be used in a streaming architecture where multiple
-// handlers can be registered for different topics, and each handler can
-// process records independently.
+// This component uses a buffered channel to centrally manage the flow of polled Kafka records with a fixed
+// pool size due channel buffering (similar to semaphores), ensuring a predictable performance and resource allocation.
+//
+// Moreover, a polling job will be allocated and executed for each consumer group registered; in any case, this
+// component will also allocate and execute an additional polling job for the default group.
+// This helps default group is provisioned to reduce duplicate processing of records across multiple
+// system nodes (aka. cluster).
+//
+// Finally, this component will commit all uncommitted offsets after all records have been processed (or failed to
+// process). This is done to ensure that all records are marked as processed and avoid any permanent data-loss as
+// Apache Kafka topic is an append-log; marking individual messages is not possible. Marking record offsets individually
+// can cause data-loss as the offset might be greater than other offsets from the polled batch, and thus,
+// marking records (indirectly) with a lower offset number as processed as well.
+//
+// It is the responsibility of the user to handle the errors returned by the handler function. It is recommended
+// to use a retry mechanism or a dead-letter queue (DLQ) to handle these errors to fully guarantee no data-loss.
 type ChannelReaderManager struct {
 	options readerManagerOptions
 	client  *kgo.Client
@@ -62,6 +80,8 @@ type ChannelReaderManager struct {
 	topicGroupClientMap map[string]*kgo.Client
 	messageWorkerChanel chan *kgo.Record
 	inFlightProcs       sync.WaitGroup
+	alreadyStarted      atomic.Bool
+	isClosed            atomic.Bool
 
 	ctxBase       context.Context
 	ctxCancelFunc context.CancelFunc
@@ -89,7 +109,21 @@ func NewChannelReaderManager(opts ...ReaderManagerOption) (*ChannelReaderManager
 	}, nil
 }
 
-func (c *ChannelReaderManager) Register(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption) {
+// Register registers a handler for a specific topic. The handler will be invoked everytime a record is fetched
+// from the Apache Kafka topic.
+//
+// Use [ReaderRegisterOption] to configure additional mechanisms (like consumer groups).
+//
+// This routine must be called before [ReaderManager.Start] is called. If this routine is called after
+// [ReaderManager.Start] is called, it will return [ErrReaderManagerAlreadyStarted] as it does not allow consumer
+// registrations at runtime.
+func (c *ChannelReaderManager) Register(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption) error {
+	if c.alreadyStarted.Load() {
+		return ErrReaderManagerAlreadyStarted
+	} else if c.isClosed.Load() {
+		return ErrReaderManagerClosed
+	}
+
 	options := readerRegisterOptions{}
 	for _, opt := range opts {
 		opt(&options)
@@ -97,33 +131,57 @@ func (c *ChannelReaderManager) Register(name string, handler ReaderHandlerFunc, 
 
 	_, ok := c.topicHandlerMap[name]
 	if ok {
-		panic(ErrAlreadyRegistered)
+		return ErrAlreadyRegistered
 	}
 
 	c.topicHandlerMap[name] = handler
 	if options.group.IsZero() {
 		c.client.AddConsumeTopics(name)
-		return
+		return nil
 	}
 
 	var err error
 	groupClient, ok := c.topicGroupClientMap[name]
 	if ok {
 		groupClient.AddConsumeTopics(name)
-		return
+		return nil
 	}
 
 	groupClient, err = kgo.NewClient(
 		append(c.options.baseOpts, kgo.ConsumerGroup(options.group.String()))...,
 	)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	c.topicGroupClientMap[name] = groupClient
 	groupClient.AddConsumeTopics(name)
+	return nil
 }
 
+// MustRegister registers a handler for a specific topic. The handler will be invoked everytime a record is fetched
+// from the Apache Kafka topic.
+//
+// Use [ReaderRegisterOption] to configure additional mechanisms (like consumer groups).
+//
+// This routine must be called before [ReaderManager.Start] is called. If this routine is called after
+// [ReaderManager.Start] is called, it will return [ErrReaderManagerAlreadyStarted] as it does not allow consumer
+// registrations at runtime.
+//
+// This routine will panic if any error occurs.
+func (c *ChannelReaderManager) MustRegister(name string, handler ReaderHandlerFunc, opts ...ReaderRegisterOption) {
+	if err := c.Register(name, handler, opts...); err != nil {
+		panic(err)
+	}
+}
+
+// Start starts the reader manager. It begins polling records from Kafka and invoking the registered handlers.
 func (c *ChannelReaderManager) Start() error {
+	if c.alreadyStarted.Load() {
+		return ErrReaderManagerAlreadyStarted
+	} else if c.isClosed.Load() {
+		return ErrReaderManagerClosed
+	}
+
 	c.ctxBase, c.ctxCancelFunc = context.WithCancel(context.Background())
 
 	// set defaults
@@ -136,6 +194,7 @@ func (c *ChannelReaderManager) Start() error {
 	c.messageWorkerChanel = make(chan *kgo.Record, c.options.workerPoolSize)
 	go c.startWorkerProc()
 
+	c.alreadyStarted.Store(true)
 	errs := make([]error, 0, len(c.topicGroupClientMap)+1)
 	errsMu := sync.Mutex{}
 	go func() {
@@ -181,7 +240,7 @@ func (c *ChannelReaderManager) startPoller(client *kgo.Client) error {
 
 		if fetches.Empty() {
 			if c.options.errorHandler != nil {
-				c.options.errorHandler(c.ctxBase, ErrNoRecords)
+				c.options.errorHandler(c.ctxBase, ErrEOF)
 			}
 			time.Sleep(c.options.pollInterval)
 			continue
@@ -223,7 +282,13 @@ func (c *ChannelReaderManager) processRecord(record *kgo.Record) error {
 	return handlerFunc(scopedCtx, record)
 }
 
+// Close closes the reader manager. It stops polling records from Kafka and waits for all in-flight handlers
+// to complete for a graceful shutdown.
 func (c *ChannelReaderManager) Close(ctx context.Context) error {
+	if c.isClosed.Load() {
+		return ErrReaderManagerClosed
+	}
+	c.isClosed.Store(true)
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -241,6 +306,8 @@ func (c *ChannelReaderManager) Close(ctx context.Context) error {
 
 // -- Option(s) --
 
+// --- Registrar ---
+
 type readerRegisterOptions struct {
 	group ConsumerGroup
 }
@@ -255,6 +322,8 @@ func WithReaderGroup(group ConsumerGroup) ReaderRegisterOption {
 	}
 }
 
+// --- Manager ---
+
 type readerManagerOptions struct {
 	baseOpts []kgo.Opt
 
@@ -265,11 +334,12 @@ type readerManagerOptions struct {
 	errorHandler   func(context.Context, error)
 }
 
+// ReaderManagerOption represents an option for configuring the [ReaderManager].
 type ReaderManagerOption func(*readerManagerOptions)
 
-// WithReaderClientOpts sets the base options ([][kgo.Opt]) of the underlying clients used by
+// WithReaderManagerClientOpts sets the base options ([][kgo.Opt]) of the underlying clients used by
 // [ReaderManager].
-func WithReaderClientOpts(opts ...kgo.Opt) ReaderManagerOption {
+func WithReaderManagerClientOpts(opts ...kgo.Opt) ReaderManagerOption {
 	return func(o *readerManagerOptions) {
 		if len(opts) == 0 {
 			o.baseOpts = make([]kgo.Opt, 0, len(o.baseOpts))
@@ -278,36 +348,36 @@ func WithReaderClientOpts(opts ...kgo.Opt) ReaderManagerOption {
 	}
 }
 
-// WithReaderPoolSize sets the size of the worker pool used by [ReaderManager].
-func WithReaderPoolSize(size int) ReaderManagerOption {
+// WithReaderManagerPoolSize sets the size of the worker pool used by [ReaderManager].
+func WithReaderManagerPoolSize(size int) ReaderManagerOption {
 	return func(o *readerManagerOptions) {
 		o.workerPoolSize = size
 	}
 }
 
-// WithReaderPollBatchSize sets the batch size for polling records from Kafka.
-func WithReaderPollBatchSize(size int) ReaderManagerOption {
+// WithReaderManagerPollBatchSize sets the batch size for polling records from Kafka.
+func WithReaderManagerPollBatchSize(size int) ReaderManagerOption {
 	return func(o *readerManagerOptions) {
 		o.pollBatchSize = size
 	}
 }
 
-// WithReaderPollInterval sets the interval for polling records from Kafka.
-func WithReaderPollInterval(interval time.Duration) ReaderManagerOption {
+// WithReaderManagerPollInterval sets the interval for polling records from Kafka.
+func WithReaderManagerPollInterval(interval time.Duration) ReaderManagerOption {
 	return func(o *readerManagerOptions) {
 		o.pollInterval = interval
 	}
 }
 
-// WithReaderHandlerTimeout sets the timeout for the handler function.
-func WithReaderHandlerTimeout(timeout time.Duration) ReaderManagerOption {
+// WithReaderManagerHandlerTimeout sets the timeout for the handler function.
+func WithReaderManagerHandlerTimeout(timeout time.Duration) ReaderManagerOption {
 	return func(o *readerManagerOptions) {
 		o.handlerTimeout = timeout
 	}
 }
 
-// WithReaderErrorHandler sets the error handler function for the [ReaderManager].
-func WithReaderErrorHandler(handler func(context.Context, error)) ReaderManagerOption {
+// WithReaderManagerErrorHandler sets the error handler function for the [ReaderManager].
+func WithReaderManagerErrorHandler(handler func(context.Context, error)) ReaderManagerOption {
 	return func(o *readerManagerOptions) {
 		o.errorHandler = handler
 	}

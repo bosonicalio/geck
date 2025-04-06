@@ -35,6 +35,7 @@ func NewStreamPublisher(w stream.Writer, factory identifier.Factory) StreamPubli
 
 // Publish propagates the given events.
 func (p StreamPublisher) Publish(ctx context.Context, events []Event) error {
+	const totalHeaders = 8
 	topicMessages := make(map[string][]stream.Message)
 	for _, event := range events {
 		id, err := p.idFactory.NewID()
@@ -46,19 +47,20 @@ func (p StreamPublisher) Publish(ctx context.Context, events []Event) error {
 		if err != nil {
 			return err
 		}
+
+		header := make(stream.Header, totalHeaders)
+		header.Add(HeaderEventID, id)
+		header.Add(HeaderSource, event.Source())
+		header.Add(HeaderSpecVersion, CloudEventsCurrentSpecVersion)
+		header.Add(HeaderEventType, event.Topic().String())
+		header.Add(HeaderDataContentType, event.BytesContentType().String())
+		header.Add(HeaderDataSchema, event.SchemaSource())
+		header.Add(HeaderSubject, event.Subject())
+		header.Add(HeaderEventTime, event.OccurrenceTime().Format(time.RFC3339))
 		topicMessages[topic] = append(topicMessages[topic], stream.Message{
-			Key:  event.Key(),
-			Data: msg,
-			Metadata: map[string]string{
-				HeaderEventID:         id,
-				HeaderSource:          event.Source(),
-				HeaderSpecVersion:     CloudEventsCurrentSpecVersion,
-				HeaderEventType:       event.Topic().String(),
-				HeaderDataContentType: event.BytesContentType().String(),
-				HeaderDataSchema:      event.SchemaSource(),
-				HeaderSubject:         event.Subject(),
-				HeaderTime:            event.OccurrenceTime().Format(time.RFC3339),
-			},
+			Key:    event.Key(),
+			Data:   msg,
+			Header: header,
 		})
 	}
 
