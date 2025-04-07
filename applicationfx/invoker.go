@@ -12,6 +12,7 @@ func logAppStart(logger *slog.Logger, config application.Config) {
 		slog.String("name", config.Name),
 		slog.String("environment", config.Environment.String()),
 		slog.String("version", config.Version.String()),
+		slog.String("instance_id", config.InstanceID),
 		slog.Group("runtime",
 			slog.Int("cpus", runtime.NumCPU()),
 			slog.Group("go",
