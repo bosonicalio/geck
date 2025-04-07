@@ -60,14 +60,16 @@ type ReaderManager interface {
 // pool size due channel buffering (similar to semaphores), ensuring a predictable performance and resource allocation.
 //
 // Moreover, a polling job will be allocated and executed for each consumer group registered; in any case, this
-// component will also allocate and execute an additional polling job for the default group.
+// component will also allocate and execute an additional polling job for the default group
+// (defined by [WithReaderManagerGroupID]).
 // This helps default group is provisioned to reduce duplicate processing of records across multiple
-// system nodes (aka. cluster).
+// system nodes (aka. cluster). If no group is defined, the global poller will run with no consumer group,
+// leading to work competition (aka. race conditions) between system nodes.
 //
-// Finally, this component will commit all uncommitted offsets after all records have been processed (or failed to
+// Finally, this component will commit all uncommitted offsets after all polled records have been processed (or failed to
 // process). This is done to ensure that all records are marked as processed and avoid any permanent data-loss as
-// Apache Kafka topic is an append-log; marking individual messages is not possible. Marking record offsets individually
-// can cause data-loss as the offset might be greater than other offsets from the polled batch, and thus,
+// Apache Kafka topic use append-log storage; marking individual messages is not possible. Marking record offsets individually
+// can cause data-loss as one record offset is greater than other offsets from the polled batch, and thus,
 // marking records (indirectly) with a lower offset number as processed as well.
 //
 // It is the responsibility of the user to handle the errors returned by the handler function. It is recommended
@@ -327,6 +329,7 @@ func WithReaderGroup(group ConsumerGroup) ReaderRegisterOption {
 type readerManagerOptions struct {
 	baseOpts []kgo.Opt
 
+	groupID        string
 	workerPoolSize int
 	pollBatchSize  int
 	pollInterval   time.Duration
@@ -345,6 +348,13 @@ func WithReaderManagerClientOpts(opts ...kgo.Opt) ReaderManagerOption {
 			o.baseOpts = make([]kgo.Opt, 0, len(o.baseOpts))
 		}
 		o.baseOpts = append(o.baseOpts, opts...)
+	}
+}
+
+// WithReaderManagerGroupID sets the global consumer group ID of a [ReaderManager] instance.
+func WithReaderManagerGroupID(id string) ReaderManagerOption {
+	return func(o *readerManagerOptions) {
+		o.groupID = id
 	}
 }
 
