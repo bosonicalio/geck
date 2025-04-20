@@ -126,9 +126,9 @@ func (c *ChannelReaderManager) Register(name string, handler ReaderHandlerFunc, 
 		return ErrReaderManagerClosed
 	}
 
-	options := readerRegisterOptions{}
+	ops := readerRegisterOptions{}
 	for _, opt := range opts {
-		opt(&options)
+		opt(&ops)
 	}
 
 	_, ok := c.topicHandlerMap[name]
@@ -136,8 +136,13 @@ func (c *ChannelReaderManager) Register(name string, handler ReaderHandlerFunc, 
 		return ErrAlreadyRegistered
 	}
 
+	if len(ops.interceptors) > 0 {
+		for _, interceptor := range ops.interceptors {
+			handler = interceptor(handler)
+		}
+	}
 	c.topicHandlerMap[name] = handler
-	if options.group.IsZero() {
+	if ops.group.IsZero() {
 		c.client.AddConsumeTopics(name)
 		return nil
 	}
@@ -150,7 +155,7 @@ func (c *ChannelReaderManager) Register(name string, handler ReaderHandlerFunc, 
 	}
 
 	groupClient, err = kgo.NewClient(
-		append(c.options.baseOpts, kgo.ConsumerGroup(options.group.String()))...,
+		append(c.options.baseOpts, kgo.ConsumerGroup(ops.group.String()))...,
 	)
 	if err != nil {
 		return err
@@ -311,7 +316,8 @@ func (c *ChannelReaderManager) Close(ctx context.Context) error {
 // --- Registrar ---
 
 type readerRegisterOptions struct {
-	group ConsumerGroup
+	group        ConsumerGroup
+	interceptors []ReaderInterceptor
 }
 
 // ReaderRegisterOption represents an option for registering a reader handler.
@@ -321,6 +327,13 @@ type ReaderRegisterOption func(*readerRegisterOptions)
 func WithReaderGroup(group ConsumerGroup) ReaderRegisterOption {
 	return func(o *readerRegisterOptions) {
 		o.group = group
+	}
+}
+
+// WithReaderInterceptors sets the interceptors for the reader handler.
+func WithReaderInterceptors(interceptors ...ReaderInterceptor) ReaderRegisterOption {
+	return func(o *readerRegisterOptions) {
+		o.interceptors = interceptors
 	}
 }
 
