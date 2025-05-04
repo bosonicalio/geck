@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
-	gecksql "github.com/hadroncorp/geck/persistence/sql"
+	gecksql "github.com/tesserical/geck/persistence/sql"
 )
 
 // DBConfig is a structure used by factory routines generating sql.DB instances.

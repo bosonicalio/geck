@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hadroncorp/geck/event"
+	"github.com/tesserical/geck/event"
 )
 
 func TestNewTopic(t *testing.T) {

@@ -3,8 +3,8 @@ package sql
 import (
 	"time"
 
-	"github.com/hadroncorp/geck/persistence"
-	"github.com/hadroncorp/geck/persistence/audit"
+	"github.com/tesserical/geck/persistence"
+	"github.com/tesserical/geck/persistence/audit"
 )
 
 // Auditable is a version of audit.Auditable for SQL databases.

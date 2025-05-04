@@ -3,7 +3,7 @@ package httpfx
 import (
 	"go.uber.org/fx"
 
-	geckhttp "github.com/hadroncorp/geck/transport/http"
+	geckhttp "github.com/tesserical/geck/transport/http"
 )
 
 // AsController annotates `t` (preferred a builder routine) as a [geckhttp.Controller] and

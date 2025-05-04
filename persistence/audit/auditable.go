@@ -6,8 +6,8 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/hadroncorp/geck/persistence"
-	"github.com/hadroncorp/geck/security/identity"
+	"github.com/tesserical/geck/persistence"
+	"github.com/tesserical/geck/security/identity"
 )
 
 // --> Auditable <--

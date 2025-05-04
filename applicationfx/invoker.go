@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"runtime"
 
-	"github.com/hadroncorp/geck/application"
+	"github.com/tesserical/geck/application"
 )
 
 func logAppStart(logger *slog.Logger, config application.Config) {

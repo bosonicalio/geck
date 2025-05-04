@@ -6,8 +6,8 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/google/uuid"
 
-	"github.com/hadroncorp/geck/environment"
-	"github.com/hadroncorp/geck/version"
+	"github.com/tesserical/geck/environment"
+	"github.com/tesserical/geck/version"
 )
 
 // Config is a configuration structure for applications.

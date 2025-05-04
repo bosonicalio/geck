@@ -4,7 +4,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"go.uber.org/fx"
 
-	geckhttp "github.com/hadroncorp/geck/transport/http"
+	geckhttp "github.com/tesserical/geck/transport/http"
 )
 
 // ServerModule is the `uber/fx` module of the [geckhttp] package, aimed for HTTP servers.

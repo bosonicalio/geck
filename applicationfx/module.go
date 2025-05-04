@@ -3,7 +3,7 @@ package applicationfx
 import (
 	"go.uber.org/fx"
 
-	"github.com/hadroncorp/geck/application"
+	"github.com/tesserical/geck/application"
 )
 
 // Module is the `uber/fx` module of the [application] package.

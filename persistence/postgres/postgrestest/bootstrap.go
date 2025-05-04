@@ -7,8 +7,8 @@ import (
 
 	"github.com/caarlos0/env/v11"
 
-	"github.com/hadroncorp/geck/persistence/postgres"
-	"github.com/hadroncorp/geck/persistence/sqltest"
+	"github.com/tesserical/geck/persistence/postgres"
+	"github.com/tesserical/geck/persistence/sqltest"
 )
 
 // StartContainer starts a container and runs migrations.

@@ -7,7 +7,7 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	"github.com/hadroncorp/geck/internal/modules"
+	"github.com/tesserical/geck/internal/modules"
 )
 
 // RunGooseMigrations runs the migrations for the given database using [goose] package.

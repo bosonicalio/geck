@@ -9,8 +9,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 
-	"github.com/hadroncorp/geck/application"
-	geckhttp "github.com/hadroncorp/geck/transport/http"
+	"github.com/tesserical/geck/application"
+	geckhttp "github.com/tesserical/geck/transport/http"
 )
 
 type startServerDeps struct {

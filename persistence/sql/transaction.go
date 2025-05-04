@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/hadroncorp/geck/persistence"
+	"github.com/tesserical/geck/persistence"
 )
 
 // Transaction is an adapter structure for [persistence.Transaction].

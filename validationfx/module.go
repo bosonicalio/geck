@@ -4,7 +4,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"go.uber.org/fx"
 
-	"github.com/hadroncorp/geck/validation"
+	"github.com/tesserical/geck/validation"
 )
 
 // GoPlaygroundModule is the `uber/fx` module of the [validation] package, offering

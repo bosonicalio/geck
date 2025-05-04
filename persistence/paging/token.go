@@ -7,7 +7,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/hadroncorp/geck/security/cryptox"
+	"github.com/tesserical/geck/security/cryptox"
 )
 
 // TokenConfig represents the configuration for page tokens.

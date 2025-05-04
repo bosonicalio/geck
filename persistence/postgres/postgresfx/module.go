@@ -4,7 +4,7 @@ import (
 	"github.com/caarlos0/env/v11"
 	"go.uber.org/fx"
 
-	"github.com/hadroncorp/geck/persistence/postgres"
+	"github.com/tesserical/geck/persistence/postgres"
 )
 
 // Module is the `uber/fx` module for `geck` Persistence API Postgres integrations.

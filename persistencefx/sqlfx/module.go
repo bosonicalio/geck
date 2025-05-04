@@ -7,7 +7,7 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"go.uber.org/fx"
 
-	gecksql "github.com/hadroncorp/geck/persistence/sql"
+	gecksql "github.com/tesserical/geck/persistence/sql"
 )
 
 type databaseInterceptorsDeps struct {

@@ -3,7 +3,7 @@ package event
 import (
 	"time"
 
-	"github.com/hadroncorp/geck/transport"
+	"github.com/tesserical/geck/transport"
 )
 
 // CloudEventsCurrentSpecVersion is the current version of the Cloud Events specification.

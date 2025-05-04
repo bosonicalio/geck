@@ -3,8 +3,8 @@ package eventfx
 import (
 	"go.uber.org/fx"
 
-	"github.com/hadroncorp/geck/event"
-	"github.com/hadroncorp/geck/persistence/identifier"
+	"github.com/tesserical/geck/event"
+	"github.com/tesserical/geck/persistence/identifier"
 )
 
 var PublisherModule = fx.Module("geck/event",

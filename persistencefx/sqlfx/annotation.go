@@ -3,7 +3,7 @@ package sqlfx
 import (
 	"go.uber.org/fx"
 
-	gecksql "github.com/hadroncorp/geck/persistence/sql"
+	gecksql "github.com/tesserical/geck/persistence/sql"
 )
 
 // AsDB annotates `t` as a [gecksql.DB] implementation.

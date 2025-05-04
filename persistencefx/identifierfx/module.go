@@ -3,7 +3,7 @@ package identifierfx
 import (
 	"go.uber.org/fx"
 
-	"github.com/hadroncorp/geck/persistence/identifier"
+	"github.com/tesserical/geck/persistence/identifier"
 )
 
 // KSUIDModule is the `uber/fx` module of the [identifier] package, offering implementations

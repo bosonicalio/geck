@@ -5,7 +5,7 @@ import (
 
 	"github.com/caarlos0/env/v11"
 
-	"github.com/hadroncorp/geck/validation"
+	"github.com/tesserical/geck/validation"
 )
 
 var _globalValidator validation.Validator = validation.NewGoPlaygroundValidator(
