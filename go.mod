@@ -1,4 +1,4 @@
-module github.com/hadroncorp/geck
+module github.com/tesserical/geck
 
 go 1.23.0
 
