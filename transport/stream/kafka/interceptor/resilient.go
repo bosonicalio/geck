@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/hadroncorp/geck/transport/stream/kafka"
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/tesserical/geck/transport/stream/kafka"
 )
 
 // -- Dead Letter Queue --

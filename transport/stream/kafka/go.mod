@@ -1,12 +1,12 @@
-module github.com/hadroncorp/geck/transport/stream/kafka
+module github.com/tesserical/geck/transport/stream/kafka
 
 go 1.23.0
 
 toolchain go1.24.2
 
 require (
-	github.com/hadroncorp/geck v0.1.7
 	github.com/samber/lo v1.49.1
+	github.com/tesserical/geck v0.1.11
 	github.com/testcontainers/testcontainers-go v0.36.0
 	github.com/testcontainers/testcontainers-go/modules/kafka v0.36.0
 	github.com/twmb/franz-go v1.18.1
