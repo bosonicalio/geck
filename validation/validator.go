@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/lo"
@@ -14,15 +13,66 @@ import (
 	"github.com/tesserical/geck/syserr"
 )
 
-// Validator is a utility component used by systems to validate a certain value and/or structure.
+// Validator is a utility component used by systems to validate structures.
 type Validator interface {
-	// Validate validates the given value.
+	// Validate validates the given structure (v).
 	Validate(ctx context.Context, v any) error
 }
 
+// -- Options --
+
+type options struct {
+	codecDriver CodecDriver
+	customRules map[string]ValidateFunc
+}
+
+func newOptions(opts ...Option) *options {
+	config := &options{
+		codecDriver: JSONDriver,
+	}
+	for _, opt := range opts {
+		opt(config)
+	}
+	return config
+}
+
+// Option is a function that modifies the validator behavior.
+type Option func(*options)
+
+// WithCodecDriver sets the codec driver to be used by the validator.
+func WithCodecDriver(driver CodecDriver) Option {
+	return func(o *options) {
+		o.codecDriver = driver
+	}
+}
+
+// WithRules adds a set of custom validation rules to the validator.
+func WithRules(rules ...Rule) Option {
+	return func(o *options) {
+		if o.customRules == nil {
+			o.customRules = make(map[string]ValidateFunc, len(rules))
+		}
+		for i := range rules {
+			o.customRules[rules[i].Name] = rules[i].ValidateFunc
+		}
+	}
+}
+
+// WithRuleFunc adds a custom validation rule routine to the validator.
+func WithRuleFunc(name string, fn ValidateFunc) Option {
+	return func(o *options) {
+		if o.customRules == nil {
+			o.customRules = make(map[string]ValidateFunc, 1)
+		}
+		o.customRules[name] = fn
+	}
+}
+
+// -- Go Playground Validator --
+
 // GoPlaygroundValidator a concrete implementation of Validator using go-playground/validator package.
 type GoPlaygroundValidator struct {
-	driver   StructFieldDriver
+	driver   CodecDriver
 	validate *validator.Validate
 }
 
@@ -30,22 +80,18 @@ type GoPlaygroundValidator struct {
 var _ Validator = (*GoPlaygroundValidator)(nil)
 
 // NewGoPlaygroundValidator allocates a new GoPlaygroundValidator instance.
-func NewGoPlaygroundValidator(config ValidatorConfig) GoPlaygroundValidator {
+func NewGoPlaygroundValidator(opts ...Option) GoPlaygroundValidator {
+	config := newOptions(opts...)
 	v := validator.New()
-	_ = v.RegisterValidation("date", validateDate)
+	for name, fn := range config.customRules {
+		_ = v.RegisterValidation(name, func(fl validator.FieldLevel) bool {
+			return fn(name, fl.Field().Interface())
+		})
+	}
 	return GoPlaygroundValidator{
-		driver:   config.StructFieldDriver,
+		driver:   config.codecDriver,
 		validate: v,
 	}
-}
-
-func validateDate(fl validator.FieldLevel) bool {
-	val, ok := fl.Field().Interface().(string)
-	if !ok {
-		return false
-	}
-	_, err := time.Parse(time.DateOnly, val)
-	return err == nil
 }
 
 // Validate validates the given value. Returns error if one or more validations failed.
