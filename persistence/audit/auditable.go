@@ -115,20 +115,6 @@ func (a Auditable) IsNew() bool {
 	return a.version == 0
 }
 
-// ToView converts the current [Auditable] instance to a [View].
-func (a Auditable) ToView() View {
-	return View{
-		CreateTime:           a.createTime.Format(time.RFC3339),
-		CreateTimeMillis:     a.createTime.UnixMilli(),
-		CreateBy:             a.createBy,
-		LastUpdateTime:       a.lastUpdateTime.Format(time.RFC3339),
-		LastUpdateTimeMillis: a.lastUpdateTime.UnixMilli(),
-		LastUpdateBy:         a.lastUpdateBy,
-		Version:              a.version,
-		IsDeleted:            a.isDeleted,
-	}
-}
-
 type auditableOptions struct {
 	location *time.Location
 }
