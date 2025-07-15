@@ -41,6 +41,7 @@ var (
 		"dev":         Development,
 		"local":       Local,
 		"sandbox":     Staging,
+		"snx":         Staging,
 		"pilot":       Staging,
 	}
 	_internalToStringMap = map[Environment]string{
@@ -51,10 +52,10 @@ var (
 	}
 )
 
-// New allocates a new [Environment] instance based on its string value.
-func New(v string) (Environment, error) {
-	v = strings.ToLower(v)
-	environment, ok := _stringToInternalMap[v]
+// Parse allocates a new [Environment] instance based on its string value.
+func Parse(value string) (Environment, error) {
+	value = strings.ToLower(value)
+	environment, ok := _stringToInternalMap[value]
 	if !ok {
 		return Unknown, ErrIsInvalid
 	}
@@ -66,7 +67,7 @@ func (e Environment) MarshalText() (text []byte, err error) {
 }
 
 func (e *Environment) UnmarshalText(text []byte) error {
-	environment, err := New(string(text))
+	environment, err := Parse(string(text))
 	if err != nil {
 		return err
 	}

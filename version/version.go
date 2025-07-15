@@ -50,21 +50,30 @@ var (
 	ErrInvalidSemver = errors.New("invalid semantic version")
 )
 
-// New allocates a new [Version] instance.
+// Parse allocates a new [Version] instance.
 //
 // Returns [ErrInvalidSemver] if `v` is an invalid semantic version.
-func New(v string) (Version, error) {
-	if ok := semver.IsValid(v); !ok {
+func Parse(value string) (Version, error) {
+	if ok := semver.IsValid(value); !ok {
 		return Version{}, ErrInvalidSemver
 	}
 	return Version{
-		raw:        v,
-		major:      semver.Major(v),
-		majorMinor: semver.MajorMinor(v),
-		prerelease: semver.Prerelease(v),
-		build:      semver.Build(v),
-		canonical:  semver.Canonical(v),
+		raw:        value,
+		major:      semver.Major(value),
+		majorMinor: semver.MajorMinor(value),
+		prerelease: semver.Prerelease(value),
+		build:      semver.Build(value),
+		canonical:  semver.Canonical(value),
 	}, nil
+}
+
+// MustParse allocates a new [Version] instance and panics if the given string is not a valid semantic version.
+func MustParse(value string) Version {
+	ver, err := Parse(value)
+	if err != nil {
+		panic(fmt.Sprintf("version: %s is not a valid semantic version: %v", value, err))
+	}
+	return ver
 }
 
 func (v Version) MarshalText() (text []byte, err error) {
@@ -72,7 +81,7 @@ func (v Version) MarshalText() (text []byte, err error) {
 }
 
 func (v *Version) UnmarshalText(text []byte) error {
-	ver, err := New(string(text))
+	ver, err := Parse(string(text))
 	if err != nil {
 		return err
 	}

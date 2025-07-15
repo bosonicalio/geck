@@ -32,8 +32,8 @@ var (
 	}
 )
 
-// FormatDriver allocates a new [Driver] instance based on its string value.
-func FormatDriver(v string) (Driver, error) {
+// ParseDriver allocates a new [Driver] instance based on its string value.
+func ParseDriver(v string) (Driver, error) {
 	if d, ok := _driverFromStringMap[v]; ok {
 		return d, nil
 	}
@@ -55,7 +55,7 @@ func (d Driver) MarshalText() (text []byte, err error) {
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface for Driver.
 func (d *Driver) UnmarshalText(text []byte) error {
-	v, err := FormatDriver(string(text))
+	v, err := ParseDriver(string(text))
 	if err != nil {
 		return err
 	}
@@ -123,8 +123,8 @@ var (
 	}
 )
 
-// FormatCodecDriver allocates a new [CodecDriver] instance based on its string value.
-func FormatCodecDriver(v string) (CodecDriver, error) {
+// ParseCodecDriver allocates a new [CodecDriver] instance based on its string value.
+func ParseCodecDriver(v string) (CodecDriver, error) {
 	if d, ok := _structFieldFromStringMap[v]; ok {
 		return d, nil
 	}
@@ -140,7 +140,7 @@ func (d CodecDriver) MarshalText() (text []byte, err error) {
 }
 
 func (d *CodecDriver) UnmarshalText(text []byte) error {
-	v, err := FormatCodecDriver(string(text))
+	v, err := ParseCodecDriver(string(text))
 	if err != nil {
 		return err
 	}
