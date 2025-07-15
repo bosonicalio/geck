@@ -55,7 +55,7 @@ func NewErrorHandler(config ServerConfig) echo.HTTPErrorHandler {
 
 // Returns top status code and the error map.
 func newErrorMap(errSrc error) (int, map[string]interface{}) {
-	srcErrContainer, ok := errSrc.(syserr.Container)
+	srcErrContainer, ok := errSrc.(syserr.Unwrapper)
 	if !ok {
 		code, err := newError(errSrc)
 		return code, echo.Map{
