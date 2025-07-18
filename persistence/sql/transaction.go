@@ -7,8 +7,8 @@ import (
 	"github.com/tesserical/geck/persistence"
 )
 
-// TxExecutor is a type alias for the [persistence.TxExecutor] used in the context of a [DBTxPropagator].
-const TxExecutor persistence.TxExecutor = "sql"
+// TxDriver is a type alias for the [persistence.TxDriver] used in the context of a [DBTxPropagator].
+const TxDriver persistence.TxDriver = "sql"
 
 // Transaction is the adapter structure of [persistence.Transaction] for [sql].
 type Transaction struct {
@@ -45,8 +45,8 @@ func NewTxFactory(client DB, txOpts *sql.TxOptions) TxFactory {
 // compile-time assertion
 var _ persistence.TxFactory = (*TxFactory)(nil)
 
-func (t TxFactory) Executor() persistence.TxExecutor {
-	return TxExecutor
+func (t TxFactory) Driver() persistence.TxDriver {
+	return TxDriver
 }
 
 func (t TxFactory) NewTx(ctx context.Context) (persistence.Transaction, error) {

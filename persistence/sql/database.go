@@ -244,7 +244,7 @@ func (d DBTxPropagator) Begin() (*sql.Tx, error) {
 }
 
 func (d DBTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
-	txIface, found := persistence.FromTxContext(ctx, TxExecutor)
+	txIface, found := persistence.FromTxContext(ctx, TxDriver)
 	if !found {
 		return d.next.BeginTx(ctx, opts)
 	}
@@ -257,7 +257,7 @@ func (d DBTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.
 }
 
 func (d DBTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	txIface, found := persistence.FromTxContext(ctx, TxExecutor)
+	txIface, found := persistence.FromTxContext(ctx, TxDriver)
 	if !found {
 		return d.next.QueryContext(ctx, query, args...)
 	}
@@ -270,7 +270,7 @@ func (d DBTxPropagator) QueryContext(ctx context.Context, query string, args ...
 }
 
 func (d DBTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	txIface, found := persistence.FromTxContext(ctx, TxExecutor)
+	txIface, found := persistence.FromTxContext(ctx, TxDriver)
 	if !found {
 		return d.next.QueryRowContext(ctx, query, args...)
 	}
@@ -282,7 +282,7 @@ func (d DBTxPropagator) QueryRowContext(ctx context.Context, query string, args 
 }
 
 func (d DBTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	txIface, found := persistence.FromTxContext(ctx, TxExecutor)
+	txIface, found := persistence.FromTxContext(ctx, TxDriver)
 	if !found {
 		return d.next.ExecContext(ctx, query, args...)
 	}
@@ -295,7 +295,7 @@ func (d DBTxPropagator) ExecContext(ctx context.Context, query string, args ...i
 }
 
 func (d DBTxPropagator) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
-	txIface, found := persistence.FromTxContext(ctx, TxExecutor)
+	txIface, found := persistence.FromTxContext(ctx, TxDriver)
 	if !found {
 		return d.next.PrepareContext(ctx, query)
 	}
