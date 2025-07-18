@@ -86,7 +86,7 @@ func NewDBLogger(parent DB, logger *slog.Logger, opts ...DBLoggerOption) DBLogge
 	}
 }
 
-func (d *DBLogger) Begin() (tx *sql.Tx, err error) {
+func (d DBLogger) Begin() (tx *sql.Tx, err error) {
 	start := time.Now()
 	tx, err = d.next.Begin()
 	if err != nil {
@@ -102,7 +102,7 @@ func (d *DBLogger) Begin() (tx *sql.Tx, err error) {
 	return
 }
 
-func (d *DBLogger) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx *sql.Tx, err error) {
+func (d DBLogger) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx *sql.Tx, err error) {
 	start := time.Now()
 	var optLogAttributes slog.Attr
 	if opts != nil {
@@ -126,7 +126,7 @@ func (d *DBLogger) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx *sql.Tx
 	return
 }
 
-func (d *DBLogger) QueryContext(ctx context.Context, query string, args ...interface{}) (rows *sql.Rows, err error) {
+func (d DBLogger) QueryContext(ctx context.Context, query string, args ...interface{}) (rows *sql.Rows, err error) {
 	start := time.Now()
 	rows, err = d.next.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -146,7 +146,7 @@ func (d *DBLogger) QueryContext(ctx context.Context, query string, args ...inter
 	return
 }
 
-func (d *DBLogger) QueryRowContext(ctx context.Context, query string, args ...interface{}) (row *sql.Row) {
+func (d DBLogger) QueryRowContext(ctx context.Context, query string, args ...interface{}) (row *sql.Row) {
 	start := time.Now()
 	row = d.next.QueryRowContext(ctx, query, args...)
 	if row != nil && row.Err() != nil {
@@ -166,7 +166,7 @@ func (d *DBLogger) QueryRowContext(ctx context.Context, query string, args ...in
 	return
 }
 
-func (d *DBLogger) ExecContext(ctx context.Context, query string, args ...interface{}) (res sql.Result, err error) {
+func (d DBLogger) ExecContext(ctx context.Context, query string, args ...interface{}) (res sql.Result, err error) {
 	start := time.Now()
 	res, err = d.next.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -186,7 +186,7 @@ func (d *DBLogger) ExecContext(ctx context.Context, query string, args ...interf
 	return
 }
 
-func (d *DBLogger) PrepareContext(ctx context.Context, query string) (stmt *sql.Stmt, err error) {
+func (d DBLogger) PrepareContext(ctx context.Context, query string) (stmt *sql.Stmt, err error) {
 	start := time.Now()
 	stmt, err = d.next.PrepareContext(ctx, query)
 	if err != nil {
@@ -251,7 +251,7 @@ func NewDBTxPropagator(parent DB, opts ...DBTxPropagatorOption) DBTxPropagator {
 
 // getTxCtx retrieves a transaction context from the provided context. If the transaction context is not found
 // and the auto-create transaction option is enabled, a new transaction context is created.
-func (d *DBTxPropagator) getTxCtx(ctx context.Context) (context.Context, error) {
+func (d DBTxPropagator) getTxCtx(ctx context.Context) (context.Context, error) {
 	_, found := persistence.FromTxContext(ctx, TxExecutor)
 	if found || !d.autoCreateTx {
 		return ctx, nil
@@ -264,11 +264,11 @@ func (d *DBTxPropagator) getTxCtx(ctx context.Context) (context.Context, error) 
 	return ctxTx, nil
 }
 
-func (d *DBTxPropagator) Begin() (*sql.Tx, error) {
+func (d DBTxPropagator) Begin() (*sql.Tx, error) {
 	return d.next.Begin()
 }
 
-func (d *DBTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+func (d DBTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -286,7 +286,7 @@ func (d *DBTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql
 	return tx.Parent, nil
 }
 
-func (d *DBTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (d DBTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -304,7 +304,7 @@ func (d *DBTxPropagator) QueryContext(ctx context.Context, query string, args ..
 	return tx.Parent.QueryContext(ctxTx, query, args...)
 }
 
-func (d *DBTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (d DBTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil
@@ -320,7 +320,7 @@ func (d *DBTxPropagator) QueryRowContext(ctx context.Context, query string, args
 	return tx.Parent.QueryRowContext(ctxTx, query, args...)
 }
 
-func (d *DBTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (d DBTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -337,7 +337,7 @@ func (d *DBTxPropagator) ExecContext(ctx context.Context, query string, args ...
 	return tx.Parent.ExecContext(ctxTx, query, args...)
 }
 
-func (d *DBTxPropagator) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+func (d DBTxPropagator) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
