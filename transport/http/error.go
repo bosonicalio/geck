@@ -35,17 +35,17 @@ type Error struct {
 // NewErrorHandler allocates a new [echo.HTTPErrorHandler] instance.
 //
 // This routine generates [Error] structures to comply with a homogeneous error format.
-func NewErrorHandler(config ServerConfig) echo.HTTPErrorHandler {
+func NewErrorHandler(responseCodec string) echo.HTTPErrorHandler {
 	return func(errSrc error, c echo.Context) {
 		if c.Response().Committed {
 			return
 		}
 
 		topCode, errMap := newErrorMap(errSrc)
-		switch config.ResponseFormat {
+		switch responseCodec {
 		case "xml":
 			errSrc = c.XML(topCode, errMap["error"])
-		case "string":
+		case "text":
 			errSrc = c.String(topCode, fmt.Sprintf("%+v", errMap))
 		default:
 			errSrc = c.JSON(topCode, errMap)
