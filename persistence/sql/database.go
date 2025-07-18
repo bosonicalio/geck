@@ -74,12 +74,12 @@ type DBLogger struct {
 var _ DB = (*DBLogger)(nil)
 
 // NewDBLogger allocates a new [DBLogger].
-func NewDBLogger(parent DB, logger *slog.Logger, opts ...DBLoggerOption) *DBLogger {
+func NewDBLogger(parent DB, logger *slog.Logger, opts ...DBLoggerOption) DBLogger {
 	options := dbLoggerOptions{}
 	for _, opt := range opts {
 		opt(&options)
 	}
-	return &DBLogger{
+	return DBLogger{
 		next:     parent,
 		logger:   logger,
 		logLevel: lo.Min([]slog.Level{options.logLevel, slog.LevelDebug}),
@@ -237,12 +237,16 @@ type DBTxPropagator struct {
 var _ DB = (*DBTxPropagator)(nil)
 
 // NewDBTxPropagator allocates a new [DBTxPropagator].
-func NewDBTxPropagator(parent DB, opts ...DBTxPropagatorOption) *DBTxPropagator {
+func NewDBTxPropagator(parent DB, opts ...DBTxPropagatorOption) DBTxPropagator {
 	options := dbTxPropagatorOptions{}
 	for _, opt := range opts {
 		opt(&options)
 	}
-	return &DBTxPropagator{}
+	return DBTxPropagator{
+		next:         parent,
+		txOpts:       options.txOpts,
+		autoCreateTx: options.autoCreate,
+	}
 }
 
 // getTxCtx retrieves a transaction context from the provided context. If the transaction context is not found
