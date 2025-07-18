@@ -17,82 +17,6 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockFileUploader is a mock of FileUploader interface.
-type MockFileUploader struct {
-	ctrl     *gomock.Controller
-	recorder *MockFileUploaderMockRecorder
-	isgomock struct{}
-}
-
-// MockFileUploaderMockRecorder is the mock recorder for MockFileUploader.
-type MockFileUploaderMockRecorder struct {
-	mock *MockFileUploader
-}
-
-// NewMockFileUploader creates a new mock instance.
-func NewMockFileUploader(ctrl *gomock.Controller) *MockFileUploader {
-	mock := &MockFileUploader{ctrl: ctrl}
-	mock.recorder = &MockFileUploaderMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFileUploader) EXPECT() *MockFileUploaderMockRecorder {
-	return m.recorder
-}
-
-// Upload mocks base method.
-func (m *MockFileUploader) Upload(ctx context.Context, objectID string, data io.Reader) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Upload", ctx, objectID, data)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Upload indicates an expected call of Upload.
-func (mr *MockFileUploaderMockRecorder) Upload(ctx, objectID, data any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockFileUploader)(nil).Upload), ctx, objectID, data)
-}
-
-// MockFileRemover is a mock of FileRemover interface.
-type MockFileRemover struct {
-	ctrl     *gomock.Controller
-	recorder *MockFileRemoverMockRecorder
-	isgomock struct{}
-}
-
-// MockFileRemoverMockRecorder is the mock recorder for MockFileRemover.
-type MockFileRemoverMockRecorder struct {
-	mock *MockFileRemover
-}
-
-// NewMockFileRemover creates a new mock instance.
-func NewMockFileRemover(ctrl *gomock.Controller) *MockFileRemover {
-	mock := &MockFileRemover{ctrl: ctrl}
-	mock.recorder = &MockFileRemoverMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFileRemover) EXPECT() *MockFileRemoverMockRecorder {
-	return m.recorder
-}
-
-// Remove mocks base method.
-func (m *MockFileRemover) Remove(ctx context.Context, objectID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Remove", ctx, objectID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Remove indicates an expected call of Remove.
-func (mr *MockFileRemoverMockRecorder) Remove(ctx, objectID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockFileRemover)(nil).Remove), ctx, objectID)
-}
-
 // MockBucket is a mock of Bucket interface.
 type MockBucket struct {
 	ctrl     *gomock.Controller
@@ -118,29 +42,29 @@ func (m *MockBucket) EXPECT() *MockBucketMockRecorder {
 }
 
 // Remove mocks base method.
-func (m *MockBucket) Remove(ctx context.Context, objectID string) error {
+func (m *MockBucket) Remove(ctx context.Context, key string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Remove", ctx, objectID)
+	ret := m.ctrl.Call(m, "Remove", ctx, key)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Remove indicates an expected call of Remove.
-func (mr *MockBucketMockRecorder) Remove(ctx, objectID any) *gomock.Call {
+func (mr *MockBucketMockRecorder) Remove(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockBucket)(nil).Remove), ctx, objectID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockBucket)(nil).Remove), ctx, key)
 }
 
 // Upload mocks base method.
-func (m *MockBucket) Upload(ctx context.Context, objectID string, data io.Reader) error {
+func (m *MockBucket) Upload(ctx context.Context, key string, data io.Reader) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Upload", ctx, objectID, data)
+	ret := m.ctrl.Call(m, "Upload", ctx, key, data)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Upload indicates an expected call of Upload.
-func (mr *MockBucketMockRecorder) Upload(ctx, objectID, data any) *gomock.Call {
+func (mr *MockBucketMockRecorder) Upload(ctx, key, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockBucket)(nil).Upload), ctx, objectID, data)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockBucket)(nil).Upload), ctx, key, data)
 }
