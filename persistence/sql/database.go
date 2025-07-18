@@ -59,99 +59,34 @@ type DB interface {
 	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
 }
 
-// ---> Interceptors <---
+// - Interceptors -
 
-// DBInterceptor is a component extending [DB] to adhere new functionality to a [DB] through a
-// chain of responsibility.
-type DBInterceptor interface {
-	DB
-	// SetNext sets the parent instance to call after/before DBInterceptor operations.
-	SetNext(db DB)
-}
+// -- Logger --
 
-// -- OPTIONS --
-
-type databaseOptions struct {
-	Interceptors []DBInterceptor
-}
-
-// DatabaseOption is a routine used to set up optional configurations of [DB].
-type DatabaseOption func(*databaseOptions)
-
-// WithInterceptor appends a [DBInterceptor] to a chain of the same type, creating an execution stack
-// when any of the operations defined in [DB] executes.
-func WithInterceptor(interceptor DBInterceptor) DatabaseOption {
-	return func(do *databaseOptions) {
-		if do.Interceptors == nil {
-			do.Interceptors = make([]DBInterceptor, 0, 1)
-		}
-		do.Interceptors = append(do.Interceptors, interceptor)
-	}
-}
-
-// NewDB allocates a new [DB] out of a [sql.DB]. In addition, this routine also accepts [DatabaseOption]
-// derivatives to set up optional configurations (e.g. [WithInterceptor]).
-func NewDB(parent *sql.DB, opts ...DatabaseOption) DB {
-	options := databaseOptions{}
-	for _, opt := range opts {
-		opt(&options)
-	}
-
-	if len(options.Interceptors) == 0 {
-		return parent
-	}
-
-	var db DB = parent
-	for _, interceptor := range options.Interceptors {
-		interceptor.SetNext(db)
-		db = interceptor
-	}
-	return db
-}
-
-// -- LOGGER --
-
-// DatabaseLogger is an interceptor component adhering logging capabilities to an existing [DB].
-type DatabaseLogger struct {
+// DBLogger is an interceptor component adhering logging capabilities to an existing [DB].
+type DBLogger struct {
 	next     DB
 	logger   *slog.Logger
 	logLevel slog.Level
 }
 
-type databaseLoggerOptions struct {
-	logLevel slog.Level
-}
-
-// DatabaseLoggerOption is a routine used to set up [DatabaseLogger] optional configuration.
-type DatabaseLoggerOption func(*databaseLoggerOptions)
-
-// WithLogLevel sets the base log level to use for a [DatabaseLogger].
-func WithLogLevel(lvl slog.Level) DatabaseLoggerOption {
-	return func(o *databaseLoggerOptions) {
-		o.logLevel = lvl
-	}
-}
-
 // compile-time assertion
-var _ DBInterceptor = (*DatabaseLogger)(nil)
+var _ DB = (*DBLogger)(nil)
 
-// NewDatabaseLogger allocates a new [DatabaseLogger].
-func NewDatabaseLogger(logger *slog.Logger, opts ...DatabaseLoggerOption) *DatabaseLogger {
-	options := databaseLoggerOptions{}
+// NewDBLogger allocates a new [DBLogger].
+func NewDBLogger(parent DB, logger *slog.Logger, opts ...DBLoggerOption) *DBLogger {
+	options := dbLoggerOptions{}
 	for _, opt := range opts {
 		opt(&options)
 	}
-	return &DatabaseLogger{
+	return &DBLogger{
+		next:     parent,
 		logger:   logger,
 		logLevel: lo.Min([]slog.Level{options.logLevel, slog.LevelDebug}),
 	}
 }
 
-func (d *DatabaseLogger) SetNext(db DB) {
-	d.next = db
-}
-
-func (d *DatabaseLogger) Begin() (tx *sql.Tx, err error) {
+func (d *DBLogger) Begin() (tx *sql.Tx, err error) {
 	start := time.Now()
 	tx, err = d.next.Begin()
 	if err != nil {
@@ -167,7 +102,7 @@ func (d *DatabaseLogger) Begin() (tx *sql.Tx, err error) {
 	return
 }
 
-func (d *DatabaseLogger) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx *sql.Tx, err error) {
+func (d *DBLogger) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx *sql.Tx, err error) {
 	start := time.Now()
 	var optLogAttributes slog.Attr
 	if opts != nil {
@@ -191,7 +126,7 @@ func (d *DatabaseLogger) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx *
 	return
 }
 
-func (d *DatabaseLogger) QueryContext(ctx context.Context, query string, args ...interface{}) (rows *sql.Rows, err error) {
+func (d *DBLogger) QueryContext(ctx context.Context, query string, args ...interface{}) (rows *sql.Rows, err error) {
 	start := time.Now()
 	rows, err = d.next.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -211,7 +146,7 @@ func (d *DatabaseLogger) QueryContext(ctx context.Context, query string, args ..
 	return
 }
 
-func (d *DatabaseLogger) QueryRowContext(ctx context.Context, query string, args ...interface{}) (row *sql.Row) {
+func (d *DBLogger) QueryRowContext(ctx context.Context, query string, args ...interface{}) (row *sql.Row) {
 	start := time.Now()
 	row = d.next.QueryRowContext(ctx, query, args...)
 	if row != nil && row.Err() != nil {
@@ -231,7 +166,7 @@ func (d *DatabaseLogger) QueryRowContext(ctx context.Context, query string, args
 	return
 }
 
-func (d *DatabaseLogger) ExecContext(ctx context.Context, query string, args ...interface{}) (res sql.Result, err error) {
+func (d *DBLogger) ExecContext(ctx context.Context, query string, args ...interface{}) (res sql.Result, err error) {
 	start := time.Now()
 	res, err = d.next.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -251,7 +186,7 @@ func (d *DatabaseLogger) ExecContext(ctx context.Context, query string, args ...
 	return
 }
 
-func (d *DatabaseLogger) PrepareContext(ctx context.Context, query string) (stmt *sql.Stmt, err error) {
+func (d *DBLogger) PrepareContext(ctx context.Context, query string) (stmt *sql.Stmt, err error) {
 	start := time.Now()
 	stmt, err = d.next.PrepareContext(ctx, query)
 	if err != nil {
@@ -269,54 +204,51 @@ func (d *DatabaseLogger) PrepareContext(ctx context.Context, query string) (stmt
 	return
 }
 
+// --- Options ---
+
+type dbLoggerOptions struct {
+	logLevel slog.Level
+}
+
+// DBLoggerOption is a routine used to set up [DBLogger] optional configuration.
+type DBLoggerOption func(*dbLoggerOptions)
+
+// WithLogLevel sets the base log level to use for a [DBLogger].
+func WithLogLevel(lvl slog.Level) DBLoggerOption {
+	return func(o *dbLoggerOptions) {
+		o.logLevel = lvl
+	}
+}
+
 // -- Transaction Propagator --
 
-// DatabaseTxPropagator is an interceptor component adhering transaction propagation
+// TxExecutor is a type alias for the [persistence.TxExecutor] used in the context of a [DBTxPropagator].
+const TxExecutor persistence.TxExecutor = "sql"
+
+// DBTxPropagator is an interceptor component adhering transaction propagation
 // to all operations of an existing [DB], using transaction contexts.
-type DatabaseTxPropagator struct {
+type DBTxPropagator struct {
 	next         DB
 	txOpts       *sql.TxOptions
 	autoCreateTx bool
 }
 
-type databaseTxPropagatorOptions struct {
-	txOpts     *sql.TxOptions
-	autoCreate bool
-}
-
-// DatabaseTxPropagatorOption is a routine used to set up [DatabaseTxPropagator] optional configuration.
-type DatabaseTxPropagatorOption func(*databaseTxPropagatorOptions)
-
-// WithTxOptions sets transaction options for a [DatabaseTxPropagator].
-func WithTxOptions(opts *sql.TxOptions) DatabaseTxPropagatorOption {
-	return func(o *databaseTxPropagatorOptions) {
-		o.txOpts = opts
-	}
-}
-
-// WithAutoCreateTx enables the automatic creation of a transaction if one is not found in the context.
-func WithAutoCreateTx() DatabaseTxPropagatorOption {
-	return func(o *databaseTxPropagatorOptions) {
-		o.autoCreate = true
-	}
-}
-
 // compile-time assertion
-var _ DBInterceptor = (*DatabaseTxPropagator)(nil)
+var _ DB = (*DBTxPropagator)(nil)
 
-// NewDatabaseTxPropagator allocates a new [DatabaseTxPropagator].
-func NewDatabaseTxPropagator(opts ...DatabaseTxPropagatorOption) *DatabaseTxPropagator {
-	options := databaseTxPropagatorOptions{}
+// NewDBTxPropagator allocates a new [DBTxPropagator].
+func NewDBTxPropagator(parent DB, opts ...DBTxPropagatorOption) *DBTxPropagator {
+	options := dbTxPropagatorOptions{}
 	for _, opt := range opts {
 		opt(&options)
 	}
-	return &DatabaseTxPropagator{}
+	return &DBTxPropagator{}
 }
 
 // getTxCtx retrieves a transaction context from the provided context. If the transaction context is not found
 // and the auto-create transaction option is enabled, a new transaction context is created.
-func (d *DatabaseTxPropagator) getTxCtx(ctx context.Context) (context.Context, error) {
-	_, found := persistence.FromTxContext[Transaction](ctx)
+func (d *DBTxPropagator) getTxCtx(ctx context.Context) (context.Context, error) {
+	_, found := persistence.FromTxContext(ctx, TxExecutor)
 	if found || !d.autoCreateTx {
 		return ctx, nil
 	}
@@ -324,75 +256,120 @@ func (d *DatabaseTxPropagator) getTxCtx(ctx context.Context) (context.Context, e
 	if err != nil {
 		return ctx, err
 	}
-	ctxTx := persistence.NewTxContext[Transaction](ctx, Transaction{Parent: tx})
+	ctxTx := persistence.WithTxContext(ctx, TxExecutor, Transaction{Parent: tx})
 	return ctxTx, nil
 }
 
-func (d *DatabaseTxPropagator) SetNext(db DB) {
-	d.next = db
-}
-
-func (d *DatabaseTxPropagator) Begin() (*sql.Tx, error) {
+func (d *DBTxPropagator) Begin() (*sql.Tx, error) {
 	return d.next.Begin()
 }
 
-func (d *DatabaseTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+func (d *DBTxPropagator) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
-	tx, found := persistence.FromTxContext[Transaction](ctxTx)
-	if found {
-		return tx.Parent, nil
+
+	txIface, found := persistence.FromTxContext(ctxTx, TxExecutor)
+	if !found {
+		return d.next.BeginTx(ctxTx, opts)
 	}
-	return d.next.BeginTx(ctxTx, opts)
+
+	tx, ok := txIface.(Transaction)
+	if !ok {
+		return nil, persistence.ErrInvalidTxContext
+	}
+	return tx.Parent, nil
 }
 
-func (d *DatabaseTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (d *DBTxPropagator) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	txIface, found := persistence.FromTxContext(ctxTx, TxExecutor)
 	if !found {
 		return d.next.QueryContext(ctxTx, query, args...)
+	}
+
+	tx, ok := txIface.(Transaction)
+	if !ok {
+		return nil, persistence.ErrInvalidTxContext
 	}
 	return tx.Parent.QueryContext(ctxTx, query, args...)
 }
 
-func (d *DatabaseTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (d *DBTxPropagator) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil
 	}
-	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	txIface, found := persistence.FromTxContext(ctxTx, TxExecutor)
 	if !found {
 		return d.next.QueryRowContext(ctxTx, query, args...)
+	}
+	tx, ok := txIface.(Transaction)
+	if !ok {
+		panic(persistence.ErrInvalidTxContext)
 	}
 	return tx.Parent.QueryRowContext(ctxTx, query, args...)
 }
 
-func (d *DatabaseTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (d *DBTxPropagator) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
-	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	txIface, found := persistence.FromTxContext(ctxTx, TxExecutor)
 	if !found {
 		return d.next.ExecContext(ctxTx, query, args...)
+	}
+
+	tx, ok := txIface.(Transaction)
+	if !ok {
+		return nil, persistence.ErrInvalidTxContext
 	}
 	return tx.Parent.ExecContext(ctxTx, query, args...)
 }
 
-func (d *DatabaseTxPropagator) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+func (d *DBTxPropagator) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
 	ctxTx, err := d.getTxCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
-	tx, found := persistence.FromTxContext[Transaction](ctxTx)
+	txIface, found := persistence.FromTxContext(ctxTx, TxExecutor)
 	if !found {
 		return d.next.PrepareContext(ctxTx, query)
 	}
+
+	tx, ok := txIface.(Transaction)
+	if !ok {
+		return nil, persistence.ErrInvalidTxContext
+	}
 	return tx.Parent.PrepareContext(ctxTx, query)
+}
+
+// --- Options ---
+
+type dbTxPropagatorOptions struct {
+	txOpts     *sql.TxOptions
+	autoCreate bool
+}
+
+// DBTxPropagatorOption is a routine used to set up [DBTxPropagator] optional configuration.
+type DBTxPropagatorOption func(*dbTxPropagatorOptions)
+
+// WithTxOptions sets transaction options for a [DBTxPropagator].
+func WithTxOptions(opts *sql.TxOptions) DBTxPropagatorOption {
+	return func(o *dbTxPropagatorOptions) {
+		o.txOpts = opts
+	}
+}
+
+// WithAutoCreateTx enables the automatic creation of a transaction if one is not found in the context.
+func WithAutoCreateTx(v bool) DBTxPropagatorOption {
+	return func(o *dbTxPropagatorOptions) {
+		o.autoCreate = v
+	}
 }

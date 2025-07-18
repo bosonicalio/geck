@@ -12,8 +12,14 @@ type Principal interface {
 	Authorities() []string
 	// HasAuthority checks if the [Principal] has a specific authority.
 	HasAuthority(authority string) bool
-	// HasAuthorities checks if the [Principal] has all the specified authorities.
-	HasAuthorities(authorities ...string) bool
+	// HasAllAuthorities checks if the [Principal] has all the specified authorities.
+	//
+	// Returns false if no authorities are provided.
+	HasAllAuthorities(authorities ...string) bool
+	// HasAnyAuthorities checks if the [Principal] has any of the specified authorities.
+	//
+	// Returns false if no authorities are provided.
+	HasAnyAuthorities(authorities ...string) bool
 }
 
 // -- Basic --
@@ -52,10 +58,10 @@ func (p BasicPrincipal) HasAuthority(authority string) bool {
 	return ok
 }
 
-// HasAuthorities checks if the [Principal] has all the specified authorities.
+// HasAllAuthorities checks if the [Principal] has all the specified authorities.
 //
 // Returns false if no authorities are provided.
-func (p BasicPrincipal) HasAuthorities(authorities ...string) bool {
+func (p BasicPrincipal) HasAllAuthorities(authorities ...string) bool {
 	if len(authorities) == 0 {
 		return false
 	}
@@ -65,4 +71,19 @@ func (p BasicPrincipal) HasAuthorities(authorities ...string) bool {
 		}
 	}
 	return true
+}
+
+// HasAnyAuthorities checks if the [Principal] has any of the specified authorities.
+//
+// Returns false if no authorities are provided.
+func (p BasicPrincipal) HasAnyAuthorities(authorities ...string) bool {
+	if len(authorities) == 0 {
+		return false
+	}
+	for _, authority := range authorities {
+		if p.HasAuthority(authority) {
+			return true
+		}
+	}
+	return false
 }

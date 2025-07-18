@@ -1,6 +1,8 @@
 package identifier
 
-import "github.com/segmentio/ksuid"
+import (
+	"github.com/segmentio/ksuid"
+)
 
 // FactoryKSUID is the concrete implementation of [Factory] using K-Sortable Unique Identifier (KSUID)
 // algorithm.

@@ -39,10 +39,7 @@ func RunSeeds(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 		return nil // No seed files found, nothing to do
 	}
 
-	tx, err := db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: 0,
-		ReadOnly:  false,
-	})
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction for seed data: %w", err)
 	}

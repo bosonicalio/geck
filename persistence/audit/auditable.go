@@ -10,147 +10,118 @@ import (
 	"github.com/tesserical/geck/security/identity"
 )
 
-// --> Auditable <--
-
 const _defaultPrincipalUsername = "unknown"
 
 // Auditable is a structure provisioning metadata for persistence operations.
 //
 // Embed this structure into your entities/aggregates to enhance and control write operations.
-// Call [NewWithDefaults] routine to create an instance with default values.
+// Call [New] routine to create an instance with default values.
 //
 // Implements [persistence.Storable] interface.
 type Auditable struct {
-	createTime     time.Time
-	createBy       string
-	lastUpdateTime time.Time
-	lastUpdateBy   string
-	version        uint64
-	isDeleted      bool
+	CreateTime     time.Time
+	CreateBy       string
+	LastUpdateTime time.Time
+	LastUpdateBy   string
+	Version        int64
+	IsDeleted      bool
+
+	loc *time.Location
 }
 
 // compile-time assertions
 var _ persistence.Storable = (*Auditable)(nil)
 
-// NewWithDefaults allocates a new [Auditable] instance using default values.
+// New allocates a new [Auditable] instance using default values.
 //
-// This routine takes `ctx` argument to retrieve the [security.Principal] instance performing
-// the operation. If no principal is found, an `unknown` value will be placed instead.
+// This routine takes `ctx` argument to retrieve the [identity.Principal].
+// If no principal is found, an `unknown` value will be placed instead.
+// The principal is used to set the `CreateBy` and `LastUpdateBy` fields.
 //
 // Use [AuditableOption] routines to customize how the instance is created.
-func NewWithDefaults(ctx context.Context, opts ...AuditableOption) Auditable {
-	options := auditableOptions{}
+func New(ctx context.Context, opts ...AuditableOption) Auditable {
+	auditable := &Auditable{}
 	for _, opt := range opts {
-		opt(&options)
+		opt(auditable)
 	}
 
-	now := time.Now().In(lo.CoalesceOrEmpty(options.location, time.UTC))
 	principal, _ := identity.GetPrincipal(ctx)
 	var username string
 	if principal != nil {
 		username = principal.ID()
 	}
 	username = lo.CoalesceOrEmpty(username, _defaultPrincipalUsername)
-	return Auditable{
-		createTime:     now,
-		createBy:       username,
-		lastUpdateTime: now,
-		lastUpdateBy:   username,
-		version:        0,
-		isDeleted:      false,
-	}
+	now := time.Now().In(lo.CoalesceOrEmpty(auditable.loc, time.UTC))
+
+	auditable.CreateBy = username
+	auditable.CreateTime = lo.CoalesceOrEmpty(auditable.CreateTime, now)
+	auditable.LastUpdateBy = username
+	auditable.LastUpdateTime = lo.CoalesceOrEmpty(auditable.LastUpdateTime, auditable.CreateTime)
+	auditable.Version = lo.CoalesceOrEmpty(auditable.Version)
+	return *auditable
 }
 
-// Update increases the version, updates last update fields, both time and by.
+// IsNew checks if the type was just created.
+func (a Auditable) IsNew() bool {
+	return a.Version == 0
+}
+
+// Touch increases the version, updates last update fields, both time and by.
 //
-// This routine takes `ctx` argument to retrieve the [security.Principal] instance performing
+// This routine takes `ctx` argument to retrieve the [identity.Principal] instance performing
 // the operation. If no principal is found, an `unknown` value will be placed instead.
-func Update(ctx context.Context, auditable *Auditable) {
-	auditable.version++
-	auditable.lastUpdateTime = time.Now().UTC()
+func Touch(ctx context.Context, auditable *Auditable) {
+	auditable.Version++
+	auditable.LastUpdateTime = time.Now().In(auditable.LastUpdateTime.Location())
 	var username string
 	principal, _ := identity.GetPrincipal(ctx)
 	if principal != nil {
 		username = principal.ID()
 	}
-	auditable.lastUpdateBy = lo.CoalesceOrEmpty(username, _defaultPrincipalUsername)
+	auditable.LastUpdateBy = lo.CoalesceOrEmpty(username, _defaultPrincipalUsername)
 }
 
-// Delete Marks `auditable` as deleted. It also increases the version, updates last update
+// SoftDelete Marks `auditable` as deleted. It also increases the version, updates last update
 // fields, both time and by.
 //
-// This routine takes `ctx` argument to retrieve the [security.Principal] instance performing
+// This routine takes `ctx` argument to retrieve the [identity.Principal] instance performing
 // the operation. If no principal is found, an `unknown` value will be placed instead.
-func Delete(ctx context.Context, auditable *Auditable) {
-	auditable.isDeleted = true
-	Update(ctx, auditable)
-}
-
-func (a Auditable) CreateTime() time.Time {
-	return a.createTime
-}
-
-func (a Auditable) CreateBy() string {
-	return a.createBy
-}
-
-func (a Auditable) LastUpdateTime() time.Time {
-	return a.lastUpdateTime
-}
-
-func (a Auditable) LastUpdateBy() string {
-	return a.lastUpdateBy
-}
-
-func (a Auditable) Version() uint64 {
-	return a.version
-}
-
-func (a Auditable) IsDeleted() bool {
-	return a.isDeleted
-}
-
-// IsNew checks if the type was just created.
-func (a Auditable) IsNew() bool {
-	return a.version == 0
-}
-
-type auditableOptions struct {
-	location *time.Location
+func SoftDelete(ctx context.Context, auditable *Auditable) {
+	Touch(ctx, auditable)
+	auditable.IsDeleted = true
 }
 
 // -- Options --
 
 // AuditableOption routine used to set non-required options to [Auditable]-related routines.
-type AuditableOption func(*auditableOptions)
+type AuditableOption func(auditable *Auditable)
 
-// WithLocation sets the location for [Auditable] timestamps.
-func WithLocation(loc *time.Location) AuditableOption {
-	return func(o *auditableOptions) {
-		o.location = loc
+// WithCreateTime sets the creation time for [Auditable].
+func WithCreateTime(t time.Time) AuditableOption {
+	return func(o *Auditable) {
+		o.CreateTime = t
 	}
 }
 
-// -- New --
-
-// NewArgs is a structure used to provision arguments for [New] routine.
-type NewArgs struct {
-	CreateTime     time.Time
-	CreateBy       string
-	LastUpdateTime time.Time
-	LastUpdateBy   string
-	Version        uint64
-	IsDeleted      bool
+// WithUpdateTime sets the last update time for [Auditable].
+func WithUpdateTime(t time.Time) AuditableOption {
+	return func(o *Auditable) {
+		o.LastUpdateTime = t
+	}
 }
 
-// New allocates a new [Auditable].
-func New(args NewArgs) Auditable {
-	return Auditable{
-		createTime:     args.CreateTime,
-		createBy:       args.CreateBy,
-		lastUpdateTime: args.LastUpdateTime,
-		lastUpdateBy:   args.LastUpdateBy,
-		version:        args.Version,
-		isDeleted:      args.IsDeleted,
+// WithLocation sets the location for [Auditable] default timestamps.
+//
+// This value will be ignored if any of the `createTime` or `updateTime` options are set.
+func WithLocation(loc *time.Location) AuditableOption {
+	return func(o *Auditable) {
+		o.loc = loc
+	}
+}
+
+// WithVersion sets the initial version for [Auditable].
+func WithVersion(version int64) AuditableOption {
+	return func(o *Auditable) {
+		o.Version = version
 	}
 }
