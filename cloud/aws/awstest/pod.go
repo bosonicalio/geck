@@ -11,7 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
 
-	"github.com/tesserical/geck/testutil"
+	"github.com/bosonicalio/geck/testutil"
 )
 
 // Pod is a test component for running a LocalStack docker instance with required Amazon Web Services (AWS) services.
