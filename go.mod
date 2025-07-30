@@ -1,4 +1,4 @@
-module github.com/tesserical/geck
+module github.com/bosonical/geck
 
 go 1.23.0
 
