@@ -1,4 +1,4 @@
-module github.com/bosonical/geck
+module github.com/bosonicalio/geck
 
 go 1.23.0
 
