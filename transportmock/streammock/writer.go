@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	stream "github.com/tesserical/geck/transport/stream"
+	stream "github.com/bosonicalio/geck/transport/stream"
 	gomock "go.uber.org/mock/gomock"
 )
 

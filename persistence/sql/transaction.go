@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/tesserical/geck/persistence"
+	"github.com/bosonicalio/geck/persistence"
 )
 
 // TxDriver is a type alias for the [persistence.TxDriver] used in the context of a [DBTxPropagator].

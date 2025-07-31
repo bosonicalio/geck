@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tesserical/geck/syserr"
-	"github.com/tesserical/geck/validation"
+	"github.com/bosonicalio/geck/syserr"
+	"github.com/bosonicalio/geck/validation"
 )
 
 func TestNewGoPlaygroundValidator(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/tesserical/geck/security/cryptox"
+	"github.com/bosonicalio/geck/security/cryptox"
 )
 
 // - Cipher -

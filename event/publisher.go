@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/tesserical/geck/persistence/identifier"
-	"github.com/tesserical/geck/transport/stream"
+	"github.com/bosonicalio/geck/persistence/identifier"
+	"github.com/bosonicalio/geck/transport/stream"
 )
 
 // A Publisher is a component that propagates events to potentially one or more external systems.

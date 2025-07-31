@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tesserical/geck/persistence/audit"
-	"github.com/tesserical/geck/security/identity"
+	"github.com/bosonicalio/geck/persistence/audit"
+	"github.com/bosonicalio/geck/security/identity"
 )
 
 func TestNew(t *testing.T) {

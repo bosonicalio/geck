@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tesserical/geck/persistence/paging"
+	"github.com/bosonicalio/geck/persistence/paging"
 )
 
 func TestIterator_Multipage(t *testing.T) {

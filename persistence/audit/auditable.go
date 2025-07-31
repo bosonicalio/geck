@@ -6,8 +6,8 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/tesserical/geck/persistence"
-	"github.com/tesserical/geck/security/identity"
+	"github.com/bosonicalio/geck/persistence"
+	"github.com/bosonicalio/geck/security/identity"
 )
 
 const _defaultPrincipalUsername = "unknown"

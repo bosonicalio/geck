@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	event "github.com/tesserical/geck/event"
+	event "github.com/bosonicalio/geck/event"
 	gomock "go.uber.org/mock/gomock"
 )
 

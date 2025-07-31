@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	persistence "github.com/tesserical/geck/persistence"
+	persistence "github.com/bosonicalio/geck/persistence"
 	gomock "go.uber.org/mock/gomock"
 )
 

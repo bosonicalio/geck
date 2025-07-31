@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/tesserical/geck/environment"
-	"github.com/tesserical/geck/version"
+	"github.com/bosonicalio/geck/environment"
+	"github.com/bosonicalio/geck/version"
 )
 
 // Application is a configuration structure for applications, containing basic metadata for an application.

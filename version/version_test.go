@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tesserical/geck/version"
+	"github.com/bosonicalio/geck/version"
 )
 
 func TestParse(t *testing.T) {

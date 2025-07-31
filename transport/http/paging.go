@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/samber/lo"
 
-	"github.com/tesserical/geck/persistence/paging"
+	"github.com/bosonicalio/geck/persistence/paging"
 )
 
 // NewPaginationOptions creates a new set of pagination options based on the query parameters

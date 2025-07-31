@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/tesserical/geck/persistence"
+	"github.com/bosonicalio/geck/persistence"
 )
 
 // - Utilities -

@@ -6,9 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tesserical/geck/application"
-	"github.com/tesserical/geck/environment"
-	"github.com/tesserical/geck/version"
+	"github.com/bosonicalio/geck/application"
+	"github.com/bosonicalio/geck/environment"
+	"github.com/bosonicalio/geck/version"
 )
 
 func TestNew(t *testing.T) {

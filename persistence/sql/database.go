@@ -8,7 +8,7 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/tesserical/geck/persistence"
+	"github.com/bosonicalio/geck/persistence"
 )
 
 // DB represents a SQL database client based on stdlib [sql.DB].

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/tesserical/geck/blob"
-	"github.com/tesserical/geck/blobmock"
+	"github.com/bosonicalio/geck/blob"
+	"github.com/bosonicalio/geck/blobmock"
 )
 
 func TestUploadAll(t *testing.T) {

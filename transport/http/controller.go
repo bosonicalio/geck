@@ -3,7 +3,7 @@ package http
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/tesserical/geck/application"
+	"github.com/bosonicalio/geck/application"
 )
 
 // Controller is a transport component exposing a set of endpoints through the HTTP protocol

@@ -10,7 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/lo"
 
-	"github.com/tesserical/geck/syserr"
+	"github.com/bosonicalio/geck/syserr"
 )
 
 // Validator is a utility component used by systems to validate structures.
