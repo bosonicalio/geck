@@ -9,7 +9,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/tesserical/geck/transport/stream"
+	"github.com/bosonicalio/geck/transport/stream"
 )
 
 // - Asynchronous Writer -

@@ -3,7 +3,7 @@ package kafka
 import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/tesserical/geck/transport/stream"
+	"github.com/bosonicalio/geck/transport/stream"
 )
 
 func marshalHeaders(headers stream.Header) []kgo.RecordHeader {

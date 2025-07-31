@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/samber/lo"
 
-	"github.com/tesserical/geck/blob"
+	"github.com/bosonicalio/geck/blob"
 )
 
 // Bucket is the Amazon Simple Storage Service (S3) implementation of [blob.Bucket].

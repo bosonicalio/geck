@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tesserical/geck/blob/s3/s3test"
-	"github.com/tesserical/geck/cloud/aws/awstest"
+	"github.com/bosonicalio/geck/blob/s3/s3test"
+	"github.com/bosonicalio/geck/cloud/aws/awstest"
 )
 
 func TestNewPod(t *testing.T) {

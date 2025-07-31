@@ -7,7 +7,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/tesserical/geck/transport/stream/kafka"
+	"github.com/bosonicalio/geck/transport/stream/kafka"
 )
 
 // -- Dead Letter Queue --

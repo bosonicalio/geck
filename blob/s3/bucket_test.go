@@ -1,4 +1,4 @@
-//go:build integration
+//go:build !integration
 
 package s3_test
 
@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gecks3 "github.com/tesserical/geck/blob/s3"
-	"github.com/tesserical/geck/blob/s3/s3test"
-	"github.com/tesserical/geck/cloud/aws/awstest"
+	gecks3 "github.com/bosonicalio/geck/blob/s3"
+	"github.com/bosonicalio/geck/blob/s3/s3test"
+	"github.com/bosonicalio/geck/cloud/aws/awstest"
 )
 
 func TestBucket_Upload(t *testing.T) {

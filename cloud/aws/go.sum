@@ -32,8 +32,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.35.1 h1:iF4Xxkc0H9c/K2dS0zZw3SCkj0Z7
 github.com/aws/aws-sdk-go-v2/service/sts v1.35.1/go.mod h1:0bxIatfN0aLq4mjoLDeBpOjOke68OsFlXPDFJ7V0MYw=
 github.com/aws/smithy-go v1.22.5 h1:P9ATCXPMb2mPjYBgueqJNCA5S9UfktsW0tTxi+a7eqw=
 github.com/aws/smithy-go v1.22.5/go.mod h1:t1ufH5HMublsJYulve2RKmHDC15xu1f26kHCp/HgceI=
-github.com/bosonicalio/geck v0.1.18 h1:lkBLA3gXlruJD8u74gIgDbpgn+k0s9+4/YkE/7XPMQQ=
-github.com/bosonicalio/geck v0.1.18/go.mod h1:3lU81aQHD8FjJV6DDmBhtkDl58+kW8i323jiixfkF8U=
+github.com/bosonicalio/geck v0.1.19 h1:ql2qFtuHdLFxOtdxBHx9Qaj2PzlGR5tZqFKqNI3ijpw=
+github.com/bosonicalio/geck v0.1.19/go.mod h1:3lU81aQHD8FjJV6DDmBhtkDl58+kW8i323jiixfkF8U=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG8PI=

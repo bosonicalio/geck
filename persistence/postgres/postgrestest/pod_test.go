@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tesserical/geck/persistence/postgres/postgrestest"
+	"github.com/bosonicalio/geck/persistence/postgres/postgrestest"
 )
 
 func TestNewPod(t *testing.T) {

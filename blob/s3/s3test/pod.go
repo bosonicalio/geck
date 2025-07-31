@@ -8,9 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/samber/lo"
 
-	"github.com/tesserical/geck/blob"
-	"github.com/tesserical/geck/cloud/aws/awstest"
-	"github.com/tesserical/geck/testutil"
+	"github.com/bosonicalio/geck/blob"
+	"github.com/bosonicalio/geck/cloud/aws/awstest"
+	"github.com/bosonicalio/geck/testutil"
 )
 
 // Pod is a test component for running a LocalStack docker instance with S3 service.

@@ -12,9 +12,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	geckpostgres "github.com/tesserical/geck/persistence/postgres"
-	"github.com/tesserical/geck/persistence/sqltest"
-	"github.com/tesserical/geck/testutil"
+	geckpostgres "github.com/bosonicalio/geck/persistence/postgres"
+	"github.com/bosonicalio/geck/persistence/sqltest"
+	"github.com/bosonicalio/geck/testutil"
 )
 
 // Pod is a test component for running a Postgres docker instance.
