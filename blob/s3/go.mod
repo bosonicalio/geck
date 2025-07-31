@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.18.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.85.1
 	github.com/bosonicalio/geck v0.1.19
-	github.com/bosonicalio/geck/cloud/aws v0.1.2
+	github.com/bosonicalio/geck/cloud/aws v0.1.3
 	github.com/samber/lo v1.51.0
 	github.com/stretchr/testify v1.10.0
 )
